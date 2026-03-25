@@ -88,3 +88,77 @@ curl -X POST http://localhost:8000/api/rooms/{room_id}/messages \
   -H "Content-Type: application/json" \
   -d '{"player_id": "abc123", "content": "我是好人", "message_type": "chat"}'
 ```
+
+## 阿瓦隆游戏 API
+
+### 开始游戏
+```bash
+curl -X POST http://localhost:8000/api/avalon/{room_id}/start \
+  -H "Content-Type: application/json" \
+  -d '{"game_type": "avalon"}'
+```
+
+### 获取游戏状态
+```bash
+curl http://localhost:8000/api/avalon/{room_id}/state?player_id=abc123
+```
+
+### 队长提议队伍
+```bash
+curl -X POST http://localhost:8000/api/avalon/{room_id}/propose-team?player_id=abc123 \
+  -H "Content-Type: application/json" \
+  -d '{"team_player_ids": ["abc123", "def456"]}'
+```
+
+### 对队伍投票
+```bash
+curl -X POST http://localhost:8000/api/avalon/{room_id}/vote-team?player_id=abc123 \
+  -H "Content-Type: application/json" \
+  -d '{"approve": true}'
+```
+
+### 提交任务投票
+```bash
+curl -X POST http://localhost:8000/api/avalon/{room_id}/submit-quest-vote?player_id=abc123 \
+  -H "Content-Type: application/json" \
+  -d '{"is_success": true}'
+```
+
+### 刺客刺杀
+```bash
+curl -X POST http://localhost:8000/api/avalon/{room_id}/assassinate?player_id=abc123 \
+  -H "Content-Type: application/json" \
+  -d '{"target_id": "def456"}'
+```
+
+### 梅林视角（查看坏人）
+```bash
+curl http://localhost:8000/api/avalon/{room_id}/reveal-roles?player_id=abc123
+```
+
+### 派西维尔视角（查看梅林和莫甘娜）
+```bash
+curl http://localhost:8000/api/avalon/{room_id}/percival-info?player_id=abc123
+```
+
+## 游戏流程
+
+1. **创建房间** → 玩家加入（至少 5 人）
+2. **开始游戏** → 自动分配角色
+3. **队长组队** → 队长选择队员
+4. **投票表决** → 所有人投票是否同意队伍
+5. **执行任务** → 队员投票成功/失败
+6. **重复 3-5** → 直到 3 次成功（好人赢）或 3 次失败（坏人赢）
+7. **刺杀阶段** → 如果好人先赢，刺客可以刺杀梅林翻盘
+
+## 角色说明
+
+**好人阵营：**
+- 梅林：知道所有坏人（除莫德雷德）
+- 派西维尔：知道梅林和莫甘娜（但不知道谁是梅林）
+- 忠臣：无特殊能力
+
+**坏人阵营：**
+- 莫甘娜：冒充梅林，骗派西维尔
+- 刺客：最后刺杀梅林
+- 莫德雷德：梅林看不到他

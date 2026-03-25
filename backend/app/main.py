@@ -5,7 +5,7 @@ import asyncio
 import json
 from datetime import datetime
 
-from app.api import games, rooms
+from app.api import games, rooms, avalon
 from app.websocket import manager
 
 app = FastAPI(
@@ -26,6 +26,7 @@ app.add_middleware(
 # 注册路由
 app.include_router(games.router, prefix="/api/games", tags=["游戏管理"])
 app.include_router(rooms.router, prefix="/api/rooms", tags=["房间管理"])
+app.include_router(avalon.router, prefix="/api/avalon", tags=["阿瓦隆游戏"])
 
 # WebSocket 连接管理器
 websocket_manager = manager.WebSocketManager()
