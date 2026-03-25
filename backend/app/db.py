@@ -70,7 +70,7 @@ def init_db():
             )
         """)
         
-        # 游戏对局表
+        # 游戏对局表（通用信息）
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS game_sessions (
                 id TEXT PRIMARY KEY,
@@ -81,6 +81,32 @@ def init_db():
                 started_at TEXT,
                 ended_at TEXT,
                 FOREIGN KEY (room_id) REFERENCES rooms(id)
+            )
+        """)
+        
+        # 狼人杀对局表（特有字段）
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS werewolf_sessions (
+                session_id TEXT PRIMARY KEY,
+                phase TEXT DEFAULT 'night',
+                night_count INTEGER DEFAULT 0,
+                alive_roles TEXT,
+                last_killed TEXT,
+                FOREIGN KEY (session_id) REFERENCES game_sessions(id)
+            )
+        """)
+        
+        # 阿瓦隆对局表（特有字段）
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS avalon_sessions (
+                session_id TEXT PRIMARY KEY,
+                quest_number INTEGER DEFAULT 1,
+                quest_successes INTEGER DEFAULT 0,
+                quest_failures INTEGER DEFAULT 0,
+                team_leader_index INTEGER DEFAULT 0,
+                proposed_team TEXT,
+                assassination_target TEXT,
+                FOREIGN KEY (session_id) REFERENCES game_sessions(id)
             )
         """)
         
@@ -280,7 +306,7 @@ def get_room_messages(room_id: str, limit: int = 50) -> List[dict]:
 
 # ============ 游戏对局操作 ============
 
-def create_game_session(session_id: str, room_id: str, game_type: str) -> bool:
+def create_game_session(session_id: str, room_id: str, game_type: str, game_data: dict = None) -> bool:
     """创建游戏对局记录"""
     with get_db() as conn:
         try:
@@ -288,6 +314,24 @@ def create_game_session(session_id: str, room_id: str, game_type: str) -> bool:
                 INSERT INTO game_sessions (id, room_id, game_type, started_at)
                 VALUES (?, ?, ?, ?)
             """, (session_id, room_id, game_type, datetime.now().isoformat()))
+            
+            # 根据游戏类型创建特有表记录
+            if game_type == "werewolf" and game_data:
+                conn.execute("""
+                    INSERT INTO werewolf_sessions (session_id, phase, night_count, alive_roles)
+                    VALUES (?, ?, ?, ?)
+                """, (session_id, game_data.get('phase', 'night'), 
+                      game_data.get('night_count', 0),
+                      game_data.get('alive_roles', '[]')))
+            elif game_type == "avalon" and game_data:
+                conn.execute("""
+                    INSERT INTO avalon_sessions (session_id, quest_number, quest_successes, quest_failures, team_leader_index)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (session_id, game_data.get('quest_number', 1),
+                      game_data.get('quest_successes', 0),
+                      game_data.get('quest_failures', 0),
+                      game_data.get('team_leader_index', 0)))
+            
             conn.commit()
             return True
         except Exception as e:
