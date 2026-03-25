@@ -93,7 +93,7 @@ export async function getRoom(roomId: string): Promise<Room> {
 }
 
 export async function joinRoom(roomId: string, playerName: string): Promise<{ success: boolean; player: Player; room: Room }> {
-  const res = await fetch(`${API_BASE_URL}/api/rooms/${roomId}/join`, {
+  const res = await fetch(`${API_BASE_URL}/api/games/${roomId}/join`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ player_name: playerName }),
@@ -108,7 +108,7 @@ export async function sendMessage(
   content: string,
   messageType = 'chat'
 ): Promise<{ success: boolean; message: Message }> {
-  const res = await fetch(`${API_BASE_URL}/api/rooms/${roomId}/messages`, {
+  const res = await fetch(`${API_BASE_URL}/api/games/${roomId}/messages`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ player_id: playerId, content, message_type: messageType }),
@@ -118,13 +118,13 @@ export async function sendMessage(
 }
 
 export async function getMessages(roomId: string, limit = 50): Promise<{ messages: Message[] }> {
-  const res = await fetch(`${API_BASE_URL}/api/rooms/${roomId}/messages?limit=${limit}`);
+  const res = await fetch(`${API_BASE_URL}/api/games/${roomId}/messages?limit=${limit}`);
   if (!res.ok) throw new Error('获取消息失败');
   return res.json();
 }
 
 export async function startGame(roomId: string): Promise<{ success: boolean; room: Room }> {
-  const res = await fetch(`${API_BASE_URL}/api/rooms/${roomId}/start`, {
+  const res = await fetch(`${API_BASE_URL}/api/games/${roomId}/start`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
   });
