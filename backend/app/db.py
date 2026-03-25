@@ -32,8 +32,9 @@ def init_db():
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                nickname TEXT NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                last_seen TEXT DEFAULT CURRENT_TIMESTAMP
             )
         """)
         
@@ -130,19 +131,52 @@ def init_db():
 
 # ============ 用户操作 ============
 
-def create_user(user_id: str, name: str) -> bool:
-    """创建用户"""
+def create_or_update_user(user_id: str, nickname: str) -> bool:
+    """创建或更新用户"""
+    with get_db() as conn:
+        try:
+            conn.execute("""
+                INSERT INTO users (id, nickname, last_seen) 
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(id) DO UPDATE SET 
+                    nickname = excluded.nickname,
+                    last_seen = CURRENT_TIMESTAMP
+            """, (user_id, nickname))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"创建/更新用户失败：{e}")
+            return False
+
+
+def get_user(user_id: str) -> Optional[dict]:
+    """获取用户信息"""
+    with get_db() as conn:
+        cursor = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+        if row:
+            return dict(row)
+        return None
+
+
+def update_user_last_seen(user_id: str) -> bool:
+    """更新用户最后活跃时间"""
     with get_db() as conn:
         try:
             conn.execute(
-                "INSERT OR IGNORE INTO users (id, name) VALUES (?, ?)",
-                (user_id, name)
+                "UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE id = ?",
+                (user_id,)
             )
             conn.commit()
             return True
         except Exception as e:
-            print(f"创建用户失败：{e}")
+            print(f"更新用户活跃时间失败：{e}")
             return False
+
+
+def create_user(user_id: str, nickname: str) -> bool:
+    """创建用户（兼容旧接口）"""
+    return create_or_update_user(user_id, nickname)
 
 
 # ============ 房间操作 ============

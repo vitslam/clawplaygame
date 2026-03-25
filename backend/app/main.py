@@ -5,7 +5,7 @@ import asyncio
 import json
 from datetime import datetime
 
-from app.api import games, rooms, avalon
+from app.api import games, rooms, avalon, users
 from app.websocket import manager
 from app.api.rooms import init_mock_rooms
 
@@ -30,6 +30,7 @@ async def startup_event():
     init_mock_rooms()
 
 # 注册路由（注意顺序：具体路由在前，通用路由在后）
+app.include_router(users.router, prefix="/api/users", tags=["用户管理"])  # 用户路由
 app.include_router(rooms.router, prefix="/api/rooms", tags=["房间管理"])  # 房间路由
 app.include_router(games.router, prefix="/api/games", tags=["游戏管理"])  # 游戏路由
 app.include_router(avalon.router, prefix="/api/avalon", tags=["阿瓦隆游戏"])

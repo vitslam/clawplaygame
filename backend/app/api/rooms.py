@@ -128,6 +128,7 @@ class RoomResponse(BaseModel):
 
 class JoinRoomRequest(BaseModel):
     player_name: str
+    player_id: Optional[str] = None  # 可选，有则使用现有用户
 
 
 class MessageRequest(BaseModel):
@@ -208,6 +209,8 @@ async def get_room(room_id: str):
 @router.post("/{room_id}/join")
 async def join_room(room_id: str, request: JoinRoomRequest):
     """加入游戏房间"""
+    from app.api.users import get_user
+    
     room = db.get_room_with_session(room_id)
     if not room:
         raise HTTPException(status_code=404, detail="房间不存在")
@@ -219,10 +222,24 @@ async def join_room(room_id: str, request: JoinRoomRequest):
     if room["status"] != "waiting":
         raise HTTPException(status_code=400, detail="游戏已开始")
     
-    player_id = str(uuid.uuid4())[:6]
+    # 使用传入的用户 ID，如果没有则创建新用户
+    player_id = request.player_id or str(uuid.uuid4())[:12]
     
-    # 创建用户并添加到房间
-    db.create_user(player_id, request.player_name)
+    # 创建/更新用户
+    db.create_or_update_user(player_id, request.player_name)
+    
+    # 检查是否已经在房间里
+    existing_player = next((p for p in players if p["player_id"] == player_id), None)
+    if existing_player:
+        # 已经在房间里，直接返回
+        room_data = {
+            **room,
+            "players": players,
+            "is_public": bool(room["is_public"])
+        }
+        return {"success": True, "player": {"id": player_id, "name": request.player_name}, "room": RoomResponse(**room_data), "already_joined": True}
+    
+    # 添加到房间
     db.add_player_to_room(room_id, player_id, request.player_name)
     
     # 添加系统消息
@@ -236,7 +253,7 @@ async def join_room(room_id: str, request: JoinRoomRequest):
         "is_public": bool(room["is_public"])
     }
     
-    return {"success": True, "player": {"id": player_id, "name": request.player_name}, "room": RoomResponse(**room_data)}
+    return {"success": True, "player": {"id": player_id, "name": request.player_name}, "room": RoomResponse(**room_data), "already_joined": False}
 
 
 @router.post("/{room_id}/messages")
