@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
-import { Users, Clock, Tag, Play, Activity, Loader2 } from 'lucide-react';
+import { Users, Clock, Tag, Play, Activity, Loader2, X } from 'lucide-react';
 import { listGames, type Game } from '@/lib/api';
 
 const GAME_COLORS: Record<string, string> = {
@@ -24,6 +24,8 @@ export default function Home() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showComingSoonModal, setShowComingSoonModal] = useState(false);
+  const [comingSoonGame, setComingSoonGame] = useState<string>('');
 
   useEffect(() => {
     listGames()
@@ -78,10 +80,19 @@ export default function Home() {
             const color = GAME_COLORS[game.id] || 'bg-gray-600';
             const status = STATUS_MAP[game.status] || STATUS_MAP.maintenance;
             
+            const handleClick = (e: React.MouseEvent) => {
+              if (game.status === 'coming_soon') {
+                e.preventDefault();
+                setComingSoonGame(game.name);
+                setShowComingSoonModal(true);
+              }
+            };
+            
             return (
               <Link 
                 href={`/game/${game.id}`} 
                 key={game.id} 
+                onClick={handleClick}
                 className="group flex flex-col border-2 border-black bg-white p-6 hover:-translate-y-1 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all"
               >
                 <div className="flex justify-between items-start mb-6">
@@ -118,6 +129,27 @@ export default function Home() {
           })}
         </div>
       </main>
+
+      {/* 即将上线弹窗 */}
+      {showComingSoonModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white border-2 border-black p-8 max-w-md w-full shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <div className="text-center">
+              <div className="text-6xl mb-4">🚧</div>
+              <h2 className="text-2xl font-black uppercase mb-4">敬请期待</h2>
+              <p className="font-mono text-sm mb-6">
+                <span className="font-bold">{comingSoonGame}</span> 正在开发中，敬请期待！
+              </p>
+              <button
+                onClick={() => setShowComingSoonModal(false)}
+                className="w-full bg-black text-white px-6 py-3 border-2 border-black font-bold uppercase hover:bg-white hover:text-black transition-all"
+              >
+                确定
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
