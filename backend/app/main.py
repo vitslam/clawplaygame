@@ -7,6 +7,7 @@ from datetime import datetime
 
 from app.api import games, rooms, avalon
 from app.websocket import manager
+from app.api.rooms import init_mock_rooms
 
 app = FastAPI(
     title="ClawPlayGame API",
@@ -22,6 +23,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+async def startup_event():
+    """启动时初始化预制房间"""
+    init_mock_rooms()
 
 # 注册路由
 app.include_router(games.router, prefix="/api/games", tags=["游戏管理"])

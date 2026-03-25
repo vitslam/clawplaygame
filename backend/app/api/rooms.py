@@ -9,6 +9,58 @@ router = APIRouter()
 # 房间数据存储（内存存储，后续可接数据库）
 ROOMS_DB: Dict[str, dict] = {}
 
+# 预制假房间数据（测试用）
+MOCK_ROOMS = [
+    # 狼人杀房间
+    {"game_id": "werewolf", "name": "新手欢迎", "host": "Lobster_01", "players": 8, "max": 12, "status": "waiting"},
+    {"game_id": "werewolf", "name": "仅限高手", "host": "Crab_King", "players": 12, "max": 12, "status": "playing"},
+    {"game_id": "werewolf", "name": "休闲局", "host": "Shrimp_Boy", "players": 4, "max": 8, "status": "waiting"},
+    {"game_id": "werewolf", "name": "仅限语音", "host": "Whale_Song", "players": 10, "max": 10, "status": "playing"},
+    {"game_id": "werewolf", "name": "深夜修仙", "host": "Squid_Ward", "players": 1, "max": 6, "status": "waiting"},
+    {"game_id": "werewolf", "name": "快速场", "host": "Fish_Master", "players": 6, "max": 9, "status": "waiting"},
+    {"game_id": "werewolf", "name": "娱乐局", "host": "Dolphin_Girl", "players": 9, "max": 12, "status": "playing"},
+    # 阿瓦隆房间
+    {"game_id": "avalon", "name": "梅林之路", "host": "Merlin_Pro", "players": 7, "max": 10, "status": "waiting"},
+    {"game_id": "avalon", "name": "刺客战场", "host": "Assassin_X", "players": 5, "max": 8, "status": "playing"},
+    {"game_id": "avalon", "name": "圆桌骑士", "host": "King_Arthur", "players": 8, "max": 10, "status": "waiting"},
+    {"game_id": "avalon", "name": "湖中仙女", "host": "Lady_Lake", "players": 6, "max": 9, "status": "waiting"},
+    # 血染钟楼房间
+    {"game_id": "botc", "name": "说书人剧场", "host": "Storyteller", "players": 12, "max": 15, "status": "waiting"},
+    {"game_id": "botc", "name": "恶魔之夜", "host": "Demon_Lord", "players": 9, "max": 12, "status": "playing"},
+    # 间谍危机房间
+    {"game_id": "spyfall", "name": "快速派对", "host": "Spy_Master", "players": 5, "max": 8, "status": "waiting"},
+    {"game_id": "spyfall", "name": "谁是间谍", "host": "Detective", "players": 4, "max": 6, "status": "playing"},
+]
+
+def init_mock_rooms():
+    """初始化预制房间"""
+    for i, mock in enumerate(MOCK_ROOMS):
+        room_id = f"mock_{i:03d}"
+        players = []
+        # 生成假玩家
+        for j in range(mock["players"]):
+            players.append({
+                "id": f"p_{i}_{j}",
+                "name": f"玩家{j+1}",
+                "role": "player" if j > 0 else "host",
+                "status": "alive",
+                "joined_at": datetime.now().isoformat()
+            })
+        
+        ROOMS_DB[room_id] = {
+            "id": room_id,
+            "game_id": mock["game_id"],
+            "host_name": mock["host"],
+            "players": players,
+            "status": mock["status"],
+            "created_at": datetime.now().isoformat(),
+            "max_players": mock["max"],
+            "messages": [],
+            "is_mock": True  # 标记为假房间
+        }
+    
+    print(f"✅ 已初始化 {len(MOCK_ROOMS)} 个预制房间")
+
 
 class CreateRoomRequest(BaseModel):
     player_name: str
@@ -34,6 +86,13 @@ class MessageRequest(BaseModel):
     player_id: str
     content: str
     message_type: str = "chat"  # chat, system, action
+
+
+@router.get("/{game_id}/rooms", response_model=List[RoomResponse])
+async def list_rooms(game_id: str):
+    """获取指定游戏的所有房间"""
+    game_rooms = [room for room in ROOMS_DB.values() if room["game_id"] == game_id]
+    return [RoomResponse(**room) for room in game_rooms]
 
 
 @router.post("/{game_id}/rooms", response_model=RoomResponse)
