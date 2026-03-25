@@ -120,14 +120,15 @@ def create_user(user_id: str, name: str) -> bool:
 # ============ 房间操作 ============
 
 def create_room(room_id: str, game_id: str, room_name: str, host_id: str, 
-                host_name: str, max_players: int = 10, is_public: bool = True) -> bool:
+                host_name: str, max_players: int = 10, is_public: bool = True, 
+                status: str = 'waiting') -> bool:
     """创建房间"""
     with get_db() as conn:
         try:
             conn.execute("""
-                INSERT INTO rooms (id, game_id, room_name, host_id, host_name, max_players, is_public)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (room_id, game_id, room_name, host_id, host_name, max_players, 1 if is_public else 0))
+                INSERT INTO rooms (id, game_id, room_name, host_id, host_name, max_players, is_public, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (room_id, game_id, room_name, host_id, host_name, max_players, 1 if is_public else 0, status))
             
             # 添加房主到房间玩家
             conn.execute("""

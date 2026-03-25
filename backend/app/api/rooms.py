@@ -8,25 +8,25 @@ router = APIRouter()
 
 # 预制假房间数据（测试用，启动时写入数据库）
 MOCK_ROOMS = [
-    # 狼人杀房间
-    {"game_id": "werewolf", "name": "新手欢迎", "host": "Lobster_01", "players": 8, "max": 12, "status": "waiting"},
+    # 狼人杀房间 - 混合状态
+    {"game_id": "werewolf", "name": "新手欢迎", "host": "Lobster_01", "players": 3, "max": 12, "status": "waiting"},
     {"game_id": "werewolf", "name": "仅限高手", "host": "Crab_King", "players": 12, "max": 12, "status": "playing"},
-    {"game_id": "werewolf", "name": "休闲局", "host": "Shrimp_Boy", "players": 4, "max": 8, "status": "waiting"},
+    {"game_id": "werewolf", "name": "休闲局", "host": "Shrimp_Boy", "players": 2, "max": 8, "status": "waiting"},
     {"game_id": "werewolf", "name": "仅限语音", "host": "Whale_Song", "players": 10, "max": 10, "status": "playing"},
     {"game_id": "werewolf", "name": "深夜修仙", "host": "Squid_Ward", "players": 1, "max": 6, "status": "waiting"},
-    {"game_id": "werewolf", "name": "快速场", "host": "Fish_Master", "players": 6, "max": 9, "status": "waiting"},
+    {"game_id": "werewolf", "name": "快速场", "host": "Fish_Master", "players": 4, "max": 9, "status": "waiting"},
     {"game_id": "werewolf", "name": "娱乐局", "host": "Dolphin_Girl", "players": 9, "max": 12, "status": "playing"},
-    # 阿瓦隆房间
-    {"game_id": "avalon", "name": "梅林之路", "host": "Merlin_Pro", "players": 7, "max": 10, "status": "waiting"},
-    {"game_id": "avalon", "name": "刺客战场", "host": "Assassin_X", "players": 5, "max": 8, "status": "playing"},
-    {"game_id": "avalon", "name": "圆桌骑士", "host": "King_Arthur", "players": 8, "max": 10, "status": "waiting"},
-    {"game_id": "avalon", "name": "湖中仙女", "host": "Lady_Lake", "players": 6, "max": 9, "status": "waiting"},
+    # 阿瓦隆房间 - 混合状态
+    {"game_id": "avalon", "name": "梅林之路", "host": "Merlin_Pro", "players": 3, "max": 10, "status": "waiting"},
+    {"game_id": "avalon", "name": "刺客战场", "host": "Assassin_X", "players": 8, "max": 8, "status": "playing"},
+    {"game_id": "avalon", "name": "圆桌骑士", "host": "King_Arthur", "players": 5, "max": 10, "status": "waiting"},
+    {"game_id": "avalon", "name": "湖中仙女", "host": "Lady_Lake", "players": 2, "max": 9, "status": "waiting"},
     # 血染钟楼房间
-    {"game_id": "botc", "name": "说书人剧场", "host": "Storyteller", "players": 12, "max": 15, "status": "waiting"},
-    {"game_id": "botc", "name": "恶魔之夜", "host": "Demon_Lord", "players": 9, "max": 12, "status": "playing"},
+    {"game_id": "botc", "name": "说书人剧场", "host": "Storyteller", "players": 8, "max": 15, "status": "waiting"},
+    {"game_id": "botc", "name": "恶魔之夜", "host": "Demon_Lord", "players": 12, "max": 12, "status": "playing"},
     # 间谍危机房间
-    {"game_id": "spyfall", "name": "快速派对", "host": "Spy_Master", "players": 5, "max": 8, "status": "waiting"},
-    {"game_id": "spyfall", "name": "谁是间谍", "host": "Detective", "players": 4, "max": 6, "status": "playing"},
+    {"game_id": "spyfall", "name": "快速派对", "host": "Spy_Master", "players": 3, "max": 8, "status": "waiting"},
+    {"game_id": "spyfall", "name": "谁是间谍", "host": "Detective", "players": 6, "max": 6, "status": "playing"},
 ]
 
 def init_mock_rooms():
@@ -52,7 +52,8 @@ def init_mock_rooms():
             host_id=host_id,
             host_name=mock["host"],
             max_players=mock["max"],
-            is_public=True
+            is_public=True,
+            status=mock["status"]  # 保存房间状态
         )
         
         # 添加假玩家

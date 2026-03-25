@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
-import { Send, User as UserIcon, Skull, Volume2, MicOff, Info, Clock, Users, Loader2 } from 'lucide-react';
+import { Send, User as UserIcon, Skull, Volume2, MicOff, Info, Clock, Users, Loader2, Play } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { getRoom, joinRoom, getMessages, sendMessage, createWebSocket, type Room as RoomType, type Message, type Player } from '@/lib/api';
 
@@ -98,6 +98,29 @@ export default function GameRoom() {
       setInputValue('');
     } catch (err) {
       alert('发送失败：' + (err as Error).message);
+    }
+  };
+
+  const handleStartGame = async () => {
+    if (!room) return;
+    
+    // 检查人数
+    const minPlayers = room.game_id === 'avalon' ? 5 : 
+                       room.game_id === 'werewolf' ? 6 : 
+                       room.game_id === 'botc' ? 5 : 3;
+    
+    if (room.players.length < minPlayers) {
+      alert(`人数不足！${room.game_id === 'avalon' ? '阿瓦隆' : room.game_id === 'werewolf' ? '狼人杀' : '本游戏'} 需要至少 ${minPlayers} 人`);
+      return;
+    }
+    
+    try {
+      const { startGame } = await import('@/lib/api');
+      await startGame(roomId);
+      alert('游戏已开始！');
+      loadRoom();
+    } catch (err) {
+      alert('开始游戏失败：' + (err as Error).message);
     }
   };
 
@@ -208,11 +231,24 @@ export default function GameRoom() {
           {/* Header */}
           <div className="h-16 border-b-2 border-black flex items-center justify-between px-6 bg-gray-100">
             <div className="flex items-center gap-3">
-              <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+              <div className={`w-3 h-3 rounded-full ${room?.status === 'playing' ? 'bg-red-500' : 'bg-green-500'} animate-pulse`} />
               <span className="font-black text-xl">ROOM #{roomId.toUpperCase()}</span>
+              <span className={`text-xs font-bold px-2 py-1 rounded ${room?.status === 'playing' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                {room?.status === 'playing' ? '游戏中' : '等待中'}
+              </span>
             </div>
-            <div className="text-sm font-bold flex items-center gap-2 bg-blue-100 px-4 py-2 rounded-lg">
-              <Clock className="w-4 h-4" /> 第 1 轮
+            <div className="flex items-center gap-3">
+              <div className="text-sm font-bold flex items-center gap-2 bg-blue-100 px-4 py-2 rounded-lg">
+                <Users className="w-4 h-4" /> {room?.players.length || 0}/{room?.max_players}
+              </div>
+              {room?.status === 'waiting' && room?.players[0]?.id === playerId && (
+                <button
+                  onClick={handleStartGame}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700 transition-all flex items-center gap-2"
+                >
+                  <Play className="w-4 h-4" /> 开始游戏
+                </button>
+              )}
             </div>
           </div>
 
