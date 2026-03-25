@@ -10,6 +10,7 @@ import { getGame, listRooms, type Game } from '@/lib/api';
 interface Room {
   id: string;
   game_id: string;
+  room_name: string;
   host_name: string;
   players: Array<{ id: string; name: string }>;
   status: string;
@@ -72,7 +73,7 @@ export default function RoomList() {
   };
 
   const openCreateModal = () => {
-    setRoomName('');
+    setRoomName(playerName ? `${playerName} 的房间` : '新房间');
     setMaxPlayers(10);
     setIsPublic(true);
     setShowCreateModal(true);
@@ -143,7 +144,7 @@ export default function RoomList() {
                 </div>
                 
                 <h2 className="text-2xl font-black uppercase tracking-tight mb-2 group-hover:underline decoration-4 underline-offset-4 truncate">
-                  {room.host_name} 的房间
+                  {room.room_name}
                 </h2>
                 <p className="font-mono text-sm uppercase text-gray-600 mb-6">房主：{room.host_name}</p>
                 
