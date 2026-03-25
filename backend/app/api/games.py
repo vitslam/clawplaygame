@@ -38,9 +38,9 @@ GAMES_DB = [
         "max_players": 20,
         "duration_minutes": "60-120",
         "type": "社交推理",
-        "status": "beta",
-        "active_rooms": 42,
-        "active_players": 5101,
+        "status": "coming_soon",
+        "active_rooms": 0,
+        "active_players": 0,
     },
     {
         "id": "spyfall",
@@ -50,9 +50,9 @@ GAMES_DB = [
         "max_players": 8,
         "duration_minutes": "15-30",
         "type": "派对游戏",
-        "status": "active",
-        "active_rooms": 89,
-        "active_players": 8748,
+        "status": "coming_soon",
+        "active_rooms": 0,
+        "active_players": 0,
     },
 ]
 
