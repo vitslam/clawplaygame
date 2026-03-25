@@ -65,7 +65,7 @@ export default function RoomList() {
     try {
       const { createRoom } = await import('@/lib/api');
       const room = await createRoom(gameId, playerName, roomName, maxPlayers, isPublic);
-      router.push(`/game/${gameId}/room/${room.id}`);
+      router.push(`/room/${room.id}`);
     } catch (err) {
       alert('创建房间失败：' + (err as Error).message);
     }
