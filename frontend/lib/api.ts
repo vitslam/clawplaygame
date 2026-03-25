@@ -59,7 +59,7 @@ export async function getGame(gameId: string): Promise<Game> {
 }
 
 export async function listRooms(gameId: string): Promise<Room[]> {
-  const res = await fetch(`${API_BASE_URL}/api/games/${gameId}/rooms`);
+  const res = await fetch(`${API_BASE_URL}/api/rooms/${gameId}/rooms`);
   if (!res.ok) throw new Error('获取房间列表失败');
   return res.json();
 }
