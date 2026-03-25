@@ -48,8 +48,10 @@ def init_db():
                 max_players INTEGER DEFAULT 10,
                 is_public INTEGER DEFAULT 1,
                 status TEXT DEFAULT 'waiting',
+                current_session_id TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (host_id) REFERENCES users(id)
+                FOREIGN KEY (host_id) REFERENCES users(id),
+                FOREIGN KEY (current_session_id) REFERENCES game_sessions(id)
             )
         """)
         
@@ -201,6 +203,36 @@ def update_room_status(room_id: str, status: str) -> bool:
         except Exception as e:
             print(f"更新房间状态失败：{e}")
             return False
+
+
+def update_room_session(room_id: str, session_id: str) -> bool:
+    """更新房间当前对局 ID"""
+    with get_db() as conn:
+        try:
+            conn.execute(
+                "UPDATE rooms SET current_session_id = ? WHERE id = ?",
+                (session_id, room_id)
+            )
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"更新房间对局失败：{e}")
+            return False
+
+
+def get_room_with_session(room_id: str) -> Optional[dict]:
+    """获取房间及当前对局信息"""
+    with get_db() as conn:
+        cursor = conn.execute("""
+            SELECT r.*, gs.id as session_id, gs.winner, gs.end_reason
+            FROM rooms r
+            LEFT JOIN game_sessions gs ON r.current_session_id = gs.id
+            WHERE r.id = ?
+        """, (room_id,))
+        row = cursor.fetchone()
+        if row:
+            return dict(row)
+        return None
 
 
 def delete_room(room_id: str) -> bool:

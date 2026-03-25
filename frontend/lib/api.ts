@@ -26,11 +26,14 @@ export interface Player {
 export interface Room {
   id: string;
   game_id: string;
+  room_name: string;
   host_name: string;
   players: Player[];
   status: string;
   created_at: string;
   max_players: number;
+  is_public: boolean;
+  current_session_id?: string;  // 当前对局 ID
 }
 
 export interface Message {

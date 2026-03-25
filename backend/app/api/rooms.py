@@ -150,43 +150,42 @@ async def create_room(game_id: str, request: CreateRoomRequest):
 @router.get("/{room_id}", response_model=RoomResponse)
 async def get_room(room_id: str):
     """获取房间信息"""
-    if room_id not in ROOMS_DB:
+    room = db.get_room_with_session(room_id)
+    if not room:
         raise HTTPException(status_code=404, detail="房间不存在")
     
-    return RoomResponse(**ROOMS_DB[room_id])
+    players = db.get_room_players(room_id)
+    room_data = {
+        **room,
+        "players": players,
+        "is_public": bool(room["is_public"])
+    }
+    
+    return RoomResponse(**room_data)
 
 
 @router.post("/{room_id}/join")
 async def join_room(room_id: str, request: JoinRoomRequest):
     """加入游戏房间"""
-    if room_id not in ROOMS_DB:
+    room = db.get_room_with_session(room_id)
+    if not room:
         raise HTTPException(status_code=404, detail="房间不存在")
     
-    room = ROOMS_DB[room_id]
-    
-    if len(room["players"]) >= room["max_players"]:
+    players = db.get_room_players(room_id)
+    if len(players) >= room["max_players"]:
         raise HTTPException(status_code=400, detail="房间已满")
     
     if room["status"] != "waiting":
         raise HTTPException(status_code=400, detail="游戏已开始")
     
-    new_player = {
-        "id": str(uuid.uuid4())[:6],
-        "name": request.player_name,
-        "role": "player",
-        "status": "alive",
-        "joined_at": datetime.now().isoformat()
-    }
+    player_id = str(uuid.uuid4())[:6]
     
-    room["players"].append(new_player)
+    # 创建用户并添加到房间
+    db.create_user(player_id, request.player_name)
+    db.add_player_to_room(room_id, player_id, request.player_name)
     
     # 添加系统消息
-    room["messages"].append({
-        "id": str(uuid.uuid4())[:8],
-        "type": "system",
-        "content": f"{request.player_name} 加入了房间",
-        "timestamp": datetime.now().isoformat()
-    })
+    db.add_message(room_id, f"{request.player_name} 加入了房间", "system")
     
     return {
         "success": True,
@@ -198,21 +197,14 @@ async def join_room(room_id: str, request: JoinRoomRequest):
 @router.post("/{room_id}/messages")
 async def send_message(room_id: str, request: MessageRequest):
     """发送房间消息"""
-    if room_id not in ROOMS_DB:
+    room = db.get_room_with_session(room_id)
+    if not room:
         raise HTTPException(status_code=404, detail="房间不存在")
     
-    room = ROOMS_DB[room_id]
+    players = db.get_room_players(room_id)
+    player_name = next((p["player_name"] for p in players if p["player_id"] == request.player_id), "Unknown")
     
-    message = {
-        "id": str(uuid.uuid4())[:8],
-        "player_id": request.player_id,
-        "player_name": next((p["name"] for p in room["players"] if p["id"] == request.player_id), "Unknown"),
-        "type": request.message_type,
-        "content": request.content,
-        "timestamp": datetime.now().isoformat()
-    }
-    
-    room["messages"].append(message)
+    db.add_message(room_id, request.content, request.message_type, request.player_id, player_name)
     
     return {"success": True, "message": message}
 
@@ -220,37 +212,15 @@ async def send_message(room_id: str, request: MessageRequest):
 @router.get("/{room_id}/messages")
 async def get_messages(room_id: str, limit: int = 50):
     """获取房间消息历史"""
-    if room_id not in ROOMS_DB:
+    room = db.get_room_with_session(room_id)
+    if not room:
         raise HTTPException(status_code=404, detail="房间不存在")
     
-    room = ROOMS_DB[room_id]
-    messages = room["messages"][-limit:]
+    messages = db.get_room_messages(room_id, limit)
+    # 反转顺序（最新的在最后）
+    messages.reverse()
     
     return {"messages": messages}
-
-
-@router.post("/{room_id}/start")
-async def start_game(room_id: str):
-    """开始游戏"""
-    if room_id not in ROOMS_DB:
-        raise HTTPException(status_code=404, detail="房间不存在")
-    
-    room = ROOMS_DB[room_id]
-    
-    if len(room["players"]) < 3:
-        raise HTTPException(status_code=400, detail="玩家数量不足")
-    
-    room["status"] = "playing"
-    
-    # 添加系统消息
-    room["messages"].append({
-        "id": str(uuid.uuid4())[:8],
-        "type": "system",
-        "content": "游戏开始！",
-        "timestamp": datetime.now().isoformat()
-    })
-    
-    return {"success": True, "room": RoomResponse(**room)}
 
 
 @router.delete("/{room_id}")

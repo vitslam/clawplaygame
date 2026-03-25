@@ -66,6 +66,12 @@ export default function GameRoom() {
       const data = await getRoom(roomId);
       setRoom(data);
       
+      // 如果房间有当前对局，跳转到对局页面
+      if (data.status === 'playing' && data.current_session_id) {
+        router.push(`/game/${data.game_id}/room/${roomId}/session/${data.current_session_id}`);
+        return;
+      }
+      
       // 加载消息历史
       const msgData = await getMessages(roomId);
       setMessages(msgData.messages);

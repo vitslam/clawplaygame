@@ -30,13 +30,16 @@ class AssassinateRequest(BaseModel):
 @router.post("/{room_id}/start")
 async def start_avalon_game(room_id: str, request: StartGameRequest):
     """开始阿瓦隆游戏"""
-    from app.api.rooms import ROOMS_DB
+    from app import db
+    import uuid
     
-    if room_id not in ROOMS_DB:
+    # 获取房间信息
+    room = db.get_room_with_session(room_id)
+    if not room:
         raise HTTPException(status_code=404, detail="房间不存在")
     
-    room = ROOMS_DB[room_id]
-    if len(room["players"]) < 5:
+    players = db.get_room_players(room_id)
+    if len(players) < 5:
         raise HTTPException(status_code=400, detail="阿瓦隆需要至少 5 名玩家")
     
     # 创建游戏实例
@@ -45,11 +48,11 @@ async def start_avalon_game(room_id: str, request: StartGameRequest):
         raise HTTPException(status_code=500, detail="不支持的游戏类型")
     
     # 添加玩家到游戏
-    for player_data in room["players"]:
+    for player_data in players:
         from app.games.avalon import Player
         player = Player(
-            id=player_data["id"],
-            name=player_data["name"],
+            id=player_data["player_id"],
+            name=player_data["player_name"],
             is_host=(player_data.get("role") == "host")
         )
         game.players.append(player)
@@ -65,7 +68,13 @@ async def start_avalon_game(room_id: str, request: StartGameRequest):
     leader = game.players[game.team_leader_index]
     game.add_system_message(f"游戏开始！第 1 轮队长：{leader.name}")
     
-    return {"success": True, "message": "游戏已开始"}
+    # 创建对局记录
+    session_id = f"session_{uuid.uuid4().hex[:8]}"
+    db.create_game_session(session_id, room_id, "avalon")
+    db.update_room_session(room_id, session_id)
+    db.update_room_status(room_id, "playing")
+    
+    return {"success": True, "session_id": session_id, "message": "游戏已开始"}
 
 
 @router.get("/{room_id}/state")
