@@ -1,26 +1,71 @@
-import Link from 'next/link';
-import Navbar from '@/components/Navbar';
-import { Users, Lock, Unlock, Play } from 'lucide-react';
+'use client';
 
-const ROOMS = [
-  { id: '1001', name: '新手欢迎', host: 'Lobster_01', players: 8, max: 12, status: '等待中', isPrivate: false },
-  { id: '1002', name: '仅限高手', host: 'Crab_King', players: 12, max: 12, status: '游戏中', isPrivate: true },
-  { id: '1003', name: '休闲局', host: 'Shrimp_Boy', players: 4, max: 8, status: '等待中', isPrivate: false },
-  { id: '1004', name: '仅限语音', host: 'Whale_Song', players: 10, max: 10, status: '游戏中', isPrivate: false },
-  { id: '1005', name: '深夜修仙', host: 'Squid_Ward', players: 1, max: 6, status: '等待中', isPrivate: true },
-];
+import { useState, useEffect } from 'react';
+import { useParams, useRouter, Link } from 'next/navigation';
+import Navbar from '@/components/Navbar';
+import { Users, Lock, Unlock, Loader2, Plus } from 'lucide-react';
+import { getGame, type Game } from '@/lib/api';
+
+interface Room {
+  id: string;
+  game_id: string;
+  host_name: string;
+  players: Array<{ id: string; name: string }>;
+  status: string;
+  max_players: number;
+}
 
 const GAME_NAMES: Record<string, string> = {
-  'WEREWOLF': '狼人杀',
-  'AVALON': '阿瓦隆',
-  'BOTC': '血染钟楼',
-  'SPYFALL': '间谍危机',
+  werewolf: '狼人杀',
+  avalon: '阿瓦隆',
+  botc: '血染钟楼',
+  spyfall: '间谍危机',
 };
 
-export default async function RoomList({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = await params;
-  const gameId = resolvedParams.id.toUpperCase();
-  const gameName = GAME_NAMES[gameId] || gameId;
+export default function RoomList() {
+  const params = useParams();
+  const router = useRouter();
+  const gameId = params.id as string;
+  
+  const [game, setGame] = useState<Game | null>(null);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [playerName, setPlayerName] = useState('');
+
+  useEffect(() => {
+    getGame(gameId)
+      .then(setGame)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [gameId]);
+
+  const handleCreateRoom = async () => {
+    if (!playerName.trim()) {
+      alert('请输入你的昵称');
+      return;
+    }
+    
+    try {
+      const { createRoom } = await import('@/lib/api');
+      const room = await createRoom(gameId, playerName, true);
+      router.push(`/game/${gameId}/room/${room.id}`);
+    } catch (err) {
+      alert('创建房间失败：' + (err as Error).message);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-[#f4f4f4]">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+        </main>
+      </div>
+    );
+  }
+
+  const gameName = game ? GAME_NAMES[game.id] || game.name : gameId;
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f4f4f4]">
@@ -34,46 +79,66 @@ export default async function RoomList({ params }: { params: Promise<{ id: strin
             </Link>
             <h1 className="text-5xl font-black uppercase tracking-tight">{gameName} 房间</h1>
           </div>
-          <Link 
-            href={`/game/${resolvedParams.id}/room/new`}
-            className="bg-black text-white px-6 py-3 border-2 border-black font-bold uppercase hover:bg-white hover:text-black hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all whitespace-nowrap text-center"
-          >
-            + 创建房间
-          </Link>
+          
+          <div className="flex gap-4">
+            <input
+              type="text"
+              placeholder="你的昵称"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              className="border-2 border-black px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button 
+              onClick={handleCreateRoom}
+              className="bg-black text-white px-6 py-3 border-2 border-black font-bold uppercase hover:bg-white hover:text-black hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all whitespace-nowrap flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" /> 创建房间
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {ROOMS.map((room) => (
-            <Link 
-              href={`/game/${resolvedParams.id}/room/${room.id}`} 
-              key={room.id} 
-              className="group flex flex-col border-2 border-black bg-white p-6 hover:-translate-y-1 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <span className="font-mono text-sm font-bold uppercase">#{room.id}</span>
-                <span className={`font-mono text-xs font-bold uppercase px-2 py-1 border-2 border-black ${room.status === '等待中' ? 'bg-[#16a34a] text-white' : 'bg-gray-200 text-black'}`}>
-                  {room.status}
-                </span>
-              </div>
-              
-              <h2 className="text-2xl font-black uppercase tracking-tight mb-2 group-hover:underline decoration-4 underline-offset-4 truncate">{room.name}</h2>
-              <p className="font-mono text-sm uppercase text-gray-600 mb-6">房主: {room.host}</p>
-              
-              <div className="flex items-center justify-between font-mono text-sm font-bold uppercase mt-auto pt-4 border-t-2 border-black">
-                <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  <span className={room.players === room.max ? 'text-[#dc2626]' : ''}>
-                    {room.players} / {room.max}
+        {rooms.length === 0 ? (
+          <div className="text-center py-20">
+            <Users className="w-24 h-24 mx-auto text-gray-300 mb-4" />
+            <h3 className="text-2xl font-bold text-gray-400 mb-2">暂无房间</h3>
+            <p className="text-gray-500 mb-6">创建第一个房间开始游戏吧！</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {rooms.map((room) => (
+              <Link 
+                href={`/game/${gameId}/room/${room.id}`} 
+                key={room.id} 
+                className="group flex flex-col border-2 border-black bg-white p-6 hover:-translate-y-1 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <span className="font-mono text-sm font-bold uppercase">#{room.id}</span>
+                  <span className={`font-mono text-xs font-bold uppercase px-2 py-1 border-2 border-black ${room.status === 'waiting' ? 'bg-[#16a34a] text-white' : 'bg-gray-200 text-black'}`}>
+                    {room.status === 'waiting' ? '等待中' : room.status === 'playing' ? '游戏中' : '已结束'}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  {room.isPrivate ? <Lock className="w-5 h-5" /> : <Unlock className="w-5 h-5" />}
-                  <span>{room.isPrivate ? '私密' : '公开'}</span>
+                
+                <h2 className="text-2xl font-black uppercase tracking-tight mb-2 group-hover:underline decoration-4 underline-offset-4 truncate">
+                  {room.host_name} 的房间
+                </h2>
+                <p className="font-mono text-sm uppercase text-gray-600 mb-6">房主：{room.host_name}</p>
+                
+                <div className="flex items-center justify-between font-mono text-sm font-bold uppercase mt-auto pt-4 border-t-2 border-black">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    <span className={room.players.length === room.max_players ? 'text-[#dc2626]' : ''}>
+                      {room.players.length} / {room.max_players}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Unlock className="w-5 h-5" />
+                    <span>公开</span>
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
