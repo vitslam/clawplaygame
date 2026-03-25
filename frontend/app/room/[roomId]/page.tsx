@@ -189,7 +189,118 @@ export default function GameRoom() {
   }
 
   const me = room?.players.find(p => p.id === playerId);
+  const isWaiting = room?.status === 'waiting';
 
+  // 等待中界面
+  if (isWaiting) {
+    return (
+      <div className="flex flex-col h-screen bg-[#f4f4f4]">
+        <Navbar />
+        
+        <div className="flex-1 flex overflow-hidden max-w-[1600px] w-full mx-auto p-4 lg:p-6 gap-6">
+          
+          {/* Left Column: Players */}
+          <div className="flex flex-col w-80 bg-white border-2 border-black rounded-xl overflow-hidden">
+            <div className="p-5 border-b-2 border-black bg-gray-100">
+              <h3 className="font-bold text-xl flex items-center gap-3">
+                <Users className="w-6 h-6" /> 玩家列表 ({room?.players.length || 0}/{room?.max_players})
+              </h3>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {room?.players.map((player, index) => (
+                <div 
+                  key={player.id} 
+                  className={`flex items-center justify-between p-3 rounded-lg border-2 ${player.id === playerId ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${player.status === 'alive' ? 'bg-blue-600' : 'bg-gray-400'}`}>
+                      {player.status === 'alive' ? <UserIcon className="w-5 h-5 text-white" /> : <Skull className="w-5 h-5 text-white" />}
+                    </div>
+                    <div>
+                      <span className={`font-bold ${player.status === 'alive' ? 'text-gray-900' : 'text-gray-500 line-through'}`}>
+                        {index + 1}. {player.name}
+                      </span>
+                      {player.id === playerId && <div className="text-xs text-blue-600 font-bold">YOU</div>}
+                      {player.role === 'host' && <div className="text-xs text-orange-600 font-bold">房主</div>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* 房主控制区 */}
+            {room?.players[0]?.id === playerId && (
+              <div className="p-4 border-t-2 border-black bg-gray-50">
+                <button
+                  onClick={handleStartGame}
+                  disabled={(room?.players.length || 0) < (room?.game_id === 'avalon' ? 5 : room?.game_id === 'werewolf' ? 6 : 3)}
+                  className="w-full bg-green-600 text-white py-3 font-bold uppercase hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                >
+                  <Play className="w-5 h-5" /> 开始游戏
+                </button>
+                <p className="text-xs text-gray-600 mt-2 text-center">
+                  最小人数：{room?.game_id === 'avalon' ? '5 人（阿瓦隆）' : room?.game_id === 'werewolf' ? '6 人（狼人杀）' : '3 人'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Middle Column: Chat */}
+          <div className="flex-1 flex flex-col bg-white border-2 border-black rounded-xl overflow-hidden">
+            {/* Header */}
+            <div className="h-16 border-b-2 border-black flex items-center justify-between px-6 bg-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+                <span className="font-black text-xl">ROOM #{roomId.toUpperCase()}</span>
+                <span className="text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-700">等待中</span>
+              </div>
+              <div className="text-sm font-bold text-gray-600">
+                等待玩家加入...
+              </div>
+            </div>
+
+            {/* Messages */}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4">
+              {messages.map((msg) => (
+                <div key={msg.id} className={`flex ${msg.type === 'system' ? 'justify-center' : (msg.player_id === playerId ? 'justify-end' : 'justify-start')}`}>
+                  {msg.type === 'system' ? (
+                    <div className="bg-gray-100 border-2 border-gray-300 text-gray-700 px-4 py-2 rounded-full text-sm flex items-center gap-2">
+                      <Info className="w-4 h-4" /> {msg.content}
+                    </div>
+                  ) : (
+                    <div className={`max-w-[70%] px-4 py-3 rounded-xl border-2 ${msg.player_id === playerId ? 'bg-blue-600 text-white border-blue-700' : 'bg-gray-100 text-gray-900 border-gray-200'}`}>
+                      <div className="text-xs font-bold mb-1 opacity-75">{msg.player_name || '玩家'}</div>
+                      <div className="text-sm">{msg.content}</div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Input */}
+            <form onSubmit={handleSendMessage} className="p-4 border-t-2 border-black bg-gray-50 flex gap-3">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="输入消息..."
+                className="flex-1 border-2 border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button 
+                type="submit"
+                disabled={!inputValue.trim()}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <Send className="w-5 h-5" /> 发送
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 游戏中界面
   return (
     <div className="flex flex-col h-screen bg-[#f4f4f4]">
       <Navbar />
@@ -200,7 +311,7 @@ export default function GameRoom() {
         <div className="hidden lg:flex flex-col w-72 bg-white border-2 border-black rounded-xl overflow-hidden">
           <div className="p-5 border-b-2 border-black bg-gray-100">
             <h3 className="font-bold text-xl flex items-center gap-3">
-              <Users className="w-6 h-6" /> 玩家列表 ({room?.players.length || 0})
+              <Users className="w-6 h-6" /> 玩家列表
             </h3>
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
@@ -231,24 +342,12 @@ export default function GameRoom() {
           {/* Header */}
           <div className="h-16 border-b-2 border-black flex items-center justify-between px-6 bg-gray-100">
             <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${room?.status === 'playing' ? 'bg-red-500' : 'bg-green-500'} animate-pulse`} />
+              <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
               <span className="font-black text-xl">ROOM #{roomId.toUpperCase()}</span>
-              <span className={`text-xs font-bold px-2 py-1 rounded ${room?.status === 'playing' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                {room?.status === 'playing' ? '游戏中' : '等待中'}
-              </span>
+              <span className="text-xs font-bold px-2 py-1 rounded bg-red-100 text-red-700">游戏中</span>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="text-sm font-bold flex items-center gap-2 bg-blue-100 px-4 py-2 rounded-lg">
-                <Users className="w-4 h-4" /> {room?.players.length || 0}/{room?.max_players}
-              </div>
-              {room?.status === 'waiting' && room?.players[0]?.id === playerId && (
-                <button
-                  onClick={handleStartGame}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700 transition-all flex items-center gap-2"
-                >
-                  <Play className="w-4 h-4" /> 开始游戏
-                </button>
-              )}
+            <div className="text-sm font-bold flex items-center gap-2 bg-blue-100 px-4 py-2 rounded-lg">
+              <Clock className="w-4 h-4" /> 第 1 轮
             </div>
           </div>
 
