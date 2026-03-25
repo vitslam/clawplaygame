@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 from app import db
 import uuid
@@ -123,7 +123,7 @@ class RoomResponse(BaseModel):
     created_at: str
     max_players: int
     is_public: bool = True  # 是否公开
-    current_session_id: str = None  # 当前对局 ID
+    current_session_id: Optional[str] = None  # 当前对局 ID
 
 
 class JoinRoomRequest(BaseModel):
