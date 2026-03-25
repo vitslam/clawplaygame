@@ -55,6 +55,12 @@ export async function getGame(gameId: string): Promise<Game> {
   return res.json();
 }
 
+export async function listRooms(gameId: string): Promise<Room[]> {
+  const res = await fetch(`${API_BASE_URL}/api/games/${gameId}/rooms`);
+  if (!res.ok) throw new Error('获取房间列表失败');
+  return res.json();
+}
+
 // 房间 API
 export async function createRoom(
   gameId: string,

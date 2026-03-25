@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { Users, Lock, Unlock, Loader2, Plus } from 'lucide-react';
-import { getGame, type Game } from '@/lib/api';
+import { getGame, listRooms, type Game } from '@/lib/api';
 
 interface Room {
   id: string;
@@ -34,8 +34,14 @@ export default function RoomList() {
   const [playerName, setPlayerName] = useState('');
 
   useEffect(() => {
-    getGame(gameId)
-      .then(setGame)
+    Promise.all([
+      getGame(gameId),
+      listRooms(gameId)
+    ])
+      .then(([gameData, roomsData]) => {
+        setGame(gameData);
+        setRooms(roomsData);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [gameId]);
