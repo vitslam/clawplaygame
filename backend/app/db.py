@@ -32,6 +32,8 @@ def init_db():
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id TEXT PRIMARY KEY,
+                username TEXT UNIQUE,
+                password TEXT,
                 nickname TEXT NOT NULL,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 last_seen TEXT DEFAULT CURRENT_TIMESTAMP
@@ -132,7 +134,7 @@ def init_db():
 # ============ 用户操作 ============
 
 def create_or_update_user(user_id: str, nickname: str) -> bool:
-    """创建或更新用户"""
+    """创建或更新用户（游客模式）"""
     with get_db() as conn:
         try:
             conn.execute("""
@@ -149,10 +151,74 @@ def create_or_update_user(user_id: str, nickname: str) -> bool:
             return False
 
 
-def get_user(user_id: str) -> Optional[dict]:
-    """获取用户信息"""
+def register_user(username: str, password: str, nickname: str) -> Optional[str]:
+    """注册用户，返回用户 ID"""
+    import uuid
+    import hashlib
+    
+    user_id = f"user_{uuid.uuid4().hex[:12]}"
+    # 密码加盐 hash
+    salt = uuid.uuid4().hex[:8]
+    password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
+    
     with get_db() as conn:
-        cursor = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+        try:
+            conn.execute("""
+                INSERT INTO users (id, username, password, nickname) 
+                VALUES (?, ?, ?, ?)
+            """, (user_id, username, f"{salt}${password_hash}", nickname))
+            conn.commit()
+            return user_id
+        except Exception as e:
+            print(f"注册失败：{e}")
+            return None
+
+
+def login_user(username: str, password: str) -> Optional[dict]:
+    """登录用户，返回用户信息"""
+    import hashlib
+    
+    with get_db() as conn:
+        cursor = conn.execute("SELECT * FROM users WHERE username = ?", (username,))
+        row = cursor.fetchone()
+        if not row:
+            return None
+        
+        user = dict(row)
+        if not user.get('password'):
+            return None
+        
+        # 验证密码
+        try:
+            salt, stored_hash = user['password'].split('$')
+            password_hash = hashlib.sha256((password + salt).encode()).hexdigest()
+            if password_hash == stored_hash:
+                # 登录成功，更新 last_seen
+                conn.execute("UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE id = ?", (user['id'],))
+                conn.commit()
+                # 不返回密码
+                del user['password']
+                return user
+        except:
+            pass
+        
+        return None
+
+
+def get_user(user_id: str) -> Optional[dict]:
+    """获取用户信息（不返回密码）"""
+    with get_db() as conn:
+        cursor = conn.execute("SELECT id, username, nickname, created_at, last_seen FROM users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+        if row:
+            return dict(row)
+        return None
+
+
+def get_user_by_username(username: str) -> Optional[dict]:
+    """通过用户名获取用户"""
+    with get_db() as conn:
+        cursor = conn.execute("SELECT * FROM users WHERE username = ?", (username,))
         row = cursor.fetchone()
         if row:
             return dict(row)
