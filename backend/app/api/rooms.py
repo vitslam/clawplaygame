@@ -1,15 +1,12 @@
-from fastapi import APIRouter, HTTPException, WebSocket
-from typing import List, Optional, Dict
+from fastapi import APIRouter, HTTPException
+from typing import List
 from pydantic import BaseModel
-from datetime import datetime
+from app import db
 import uuid
 
 router = APIRouter()
 
-# 房间数据存储（内存存储，后续可接数据库）
-ROOMS_DB: Dict[str, dict] = {}
-
-# 预制假房间数据（测试用）
+# 预制假房间数据（测试用，启动时写入数据库）
 MOCK_ROOMS = [
     # 狼人杀房间
     {"game_id": "werewolf", "name": "新手欢迎", "host": "Lobster_01", "players": 8, "max": 12, "status": "waiting"},
@@ -33,35 +30,39 @@ MOCK_ROOMS = [
 ]
 
 def init_mock_rooms():
-    """初始化预制房间"""
+    """初始化预制房间到数据库"""
+    # 检查是否已存在预制房间
+    existing = db.get_rooms_by_game("werewolf")
+    if existing:
+        print(f"✅ 数据库已有房间，跳过预制房间初始化")
+        return
+    
     for i, mock in enumerate(MOCK_ROOMS):
         room_id = f"mock_{i:03d}"
-        players = []
-        # 生成假玩家
-        for j in range(mock["players"]):
-            players.append({
-                "id": f"p_{i}_{j}",
-                "name": f"玩家{j+1}",
-                "role": "player" if j > 0 else "host",
-                "status": "alive",
-                "joined_at": datetime.now().isoformat()
-            })
+        host_id = f"host_{i}"
         
-        ROOMS_DB[room_id] = {
-            "id": room_id,
-            "game_id": mock["game_id"],
-            "room_name": mock["name"],  # 房间名称
-            "host_name": mock["host"],
-            "players": players,
-            "status": mock["status"],
-            "created_at": datetime.now().isoformat(),
-            "max_players": mock["max"],
-            "is_public": True,  # 预制房间都是公开的
-            "messages": [],
-            "is_mock": True  # 标记为假房间
-        }
+        # 创建用户
+        db.create_user(host_id, mock["host"])
+        
+        # 创建房间
+        db.create_room(
+            room_id=room_id,
+            game_id=mock["game_id"],
+            room_name=mock["name"],
+            host_id=host_id,
+            host_name=mock["host"],
+            max_players=mock["max"],
+            is_public=True
+        )
+        
+        # 添加假玩家
+        for j in range(mock["players"]):
+            player_id = f"p_{i}_{j}"
+            player_name = f"玩家{j+1}"
+            db.create_user(player_id, player_name)
+            db.add_player_to_room(room_id, player_id, player_name)
     
-    print(f"✅ 已初始化 {len(MOCK_ROOMS)} 个预制房间")
+    print(f"✅ 已初始化 {len(MOCK_ROOMS)} 个预制房间到数据库")
 
 
 class CreateRoomRequest(BaseModel):
@@ -96,40 +97,53 @@ class MessageRequest(BaseModel):
 @router.get("/{game_id}/rooms", response_model=List[RoomResponse])
 async def list_rooms(game_id: str):
     """获取指定游戏的所有房间"""
-    game_rooms = [room for room in ROOMS_DB.values() if room["game_id"] == game_id]
-    return [RoomResponse(**room) for room in game_rooms]
+    rooms = db.get_rooms_by_game(game_id)
+    
+    # 获取每个房间的玩家
+    result = []
+    for room in rooms:
+        players = db.get_room_players(room["id"])
+        room_data = {
+            **room,
+            "players": players,
+            "is_public": bool(room["is_public"])
+        }
+        result.append(RoomResponse(**room_data))
+    
+    return result
 
 
 @router.post("/{game_id}/rooms", response_model=RoomResponse)
 async def create_room(game_id: str, request: CreateRoomRequest):
     """创建新游戏房间"""
     room_id = str(uuid.uuid4())[:8]
+    host_id = str(uuid.uuid4())[:6]
     
-    host_player = {
-        "id": str(uuid.uuid4())[:6],
-        "name": request.player_name,
-        "role": "host",
-        "status": "alive",
-        "joined_at": datetime.now().isoformat()
+    # 创建用户
+    db.create_user(host_id, request.player_name)
+    
+    # 创建房间
+    db.create_room(
+        room_id=room_id,
+        game_id=game_id,
+        room_name=request.room_name,
+        host_id=host_id,
+        host_name=request.player_name,
+        max_players=request.max_players,
+        is_public=request.is_public
+    )
+    
+    # 获取房间数据
+    room = db.get_room(room_id)
+    players = db.get_room_players(room_id)
+    
+    room_data = {
+        **room,
+        "players": players,
+        "is_public": bool(room["is_public"])
     }
     
-    room = {
-        "id": room_id,
-        "game_id": game_id,
-        "room_name": request.room_name,  # 房间名称
-        "host_name": request.player_name,
-        "players": [host_player],
-        "status": "waiting",
-        "created_at": datetime.now().isoformat(),
-        "max_players": request.max_players,
-        "is_public": request.is_public,  # 是否公开
-        "messages": [],
-        "is_mock": False
-    }
-    
-    ROOMS_DB[room_id] = room
-    
-    return RoomResponse(**room)
+    return RoomResponse(**room_data)
 
 
 @router.get("/{room_id}", response_model=RoomResponse)
