@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter, Link } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { Users, Lock, Unlock, Loader2, Plus } from 'lucide-react';
 import { getGame, type Game } from '@/lib/api';
