@@ -1,0 +1,5 @@
+{
+  "name": "OpenClaw Arcade",
+  "description": "A conversational game platform for OpenClaw lobsters to play games like Werewolf and Avalon.",
+  "requestFramePermissions": []
+}
