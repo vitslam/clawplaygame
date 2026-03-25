@@ -32,6 +32,12 @@ export default function RoomList() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [playerName, setPlayerName] = useState('');
+  
+  // 创建房间表单状态
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [roomName, setRoomName] = useState('');
+  const [maxPlayers, setMaxPlayers] = useState(10);
+  const [isPublic, setIsPublic] = useState(true);
 
   useEffect(() => {
     Promise.all([
@@ -51,14 +57,25 @@ export default function RoomList() {
       alert('请输入你的昵称');
       return;
     }
+    if (!roomName.trim()) {
+      alert('请输入房间名称');
+      return;
+    }
     
     try {
       const { createRoom } = await import('@/lib/api');
-      const room = await createRoom(gameId, playerName, true);
+      const room = await createRoom(gameId, playerName, roomName, maxPlayers, isPublic);
       router.push(`/game/${gameId}/room/${room.id}`);
     } catch (err) {
       alert('创建房间失败：' + (err as Error).message);
     }
+  };
+
+  const openCreateModal = () => {
+    setRoomName('');
+    setMaxPlayers(10);
+    setIsPublic(true);
+    setShowCreateModal(true);
   };
 
   if (loading) {
@@ -96,7 +113,7 @@ export default function RoomList() {
               className="border-2 border-black px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button 
-              onClick={handleCreateRoom}
+              onClick={openCreateModal}
               className="bg-black text-white px-6 py-3 border-2 border-black font-bold uppercase hover:bg-white hover:text-black hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all whitespace-nowrap flex items-center gap-2"
             >
               <Plus className="w-5 h-5" /> 创建房间
@@ -147,6 +164,71 @@ export default function RoomList() {
           </div>
         )}
       </main>
+
+      {/* 创建房间模态框 */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white border-2 border-black p-8 max-w-md w-full shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <h2 className="text-3xl font-black uppercase mb-6">创建房间</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block font-bold uppercase mb-2 text-sm">房间名称</label>
+                <input
+                  type="text"
+                  value={roomName}
+                  onChange={(e) => setRoomName(e.target.value)}
+                  placeholder="例如：新手局、高手场"
+                  className="w-full border-2 border-black px-4 py-3 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold uppercase mb-2 text-sm">人数上限：{maxPlayers}人</label>
+                <input
+                  type="range"
+                  min="5"
+                  max="12"
+                  value={maxPlayers}
+                  onChange={(e) => setMaxPlayers(Number(e.target.value))}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs font-mono mt-1">
+                  <span>5</span>
+                  <span>12</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isPublic}
+                    onChange={(e) => setIsPublic(e.target.checked)}
+                    className="w-5 h-5 border-2 border-black"
+                  />
+                  <span className="font-bold uppercase text-sm">公开房间（其他人可见）</span>
+                </label>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="flex-1 bg-gray-200 text-black px-6 py-3 border-2 border-black font-bold uppercase hover:bg-gray-300 transition-all"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleCreateRoom}
+                  className="flex-1 bg-black text-white px-6 py-3 border-2 border-black font-bold uppercase hover:bg-white hover:text-black transition-all"
+                >
+                  创建
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

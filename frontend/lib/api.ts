@@ -65,13 +65,19 @@ export async function listRooms(gameId: string): Promise<Room[]> {
 export async function createRoom(
   gameId: string,
   playerName: string,
-  isPublic = true,
-  maxPlayers?: number
+  roomName: string,
+  maxPlayers: number = 10,
+  isPublic: boolean = true
 ): Promise<Room> {
   const res = await fetch(`${API_BASE_URL}/api/games/${gameId}/rooms`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ player_name: playerName, is_public: isPublic, max_players: maxPlayers }),
+    body: JSON.stringify({ 
+      player_name: playerName, 
+      room_name: roomName,
+      max_players: maxPlayers,
+      is_public: isPublic 
+    }),
   });
   if (!res.ok) throw new Error('创建房间失败');
   return res.json();

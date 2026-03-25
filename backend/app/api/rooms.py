@@ -64,18 +64,21 @@ def init_mock_rooms():
 
 class CreateRoomRequest(BaseModel):
     player_name: str
-    is_public: bool = True
-    max_players: Optional[int] = None
+    room_name: str  # 房间名称
+    max_players: int = 10  # 人数
+    is_public: bool = True  # 是否公开
 
 
 class RoomResponse(BaseModel):
     id: str
     game_id: str
+    room_name: str  # 房间名称
     host_name: str
     players: List[dict]
     status: str
     created_at: str
     max_players: int
+    is_public: bool = True  # 是否公开
 
 
 class JoinRoomRequest(BaseModel):
@@ -111,12 +114,15 @@ async def create_room(game_id: str, request: CreateRoomRequest):
     room = {
         "id": room_id,
         "game_id": game_id,
+        "room_name": request.room_name,  # 房间名称
         "host_name": request.player_name,
         "players": [host_player],
-        "status": "waiting",  # waiting, playing, finished
+        "status": "waiting",
         "created_at": datetime.now().isoformat(),
-        "max_players": request.max_players or 10,
-        "messages": []
+        "max_players": request.max_players,
+        "is_public": request.is_public,  # 是否公开
+        "messages": [],
+        "is_mock": False
     }
     
     ROOMS_DB[room_id] = room
