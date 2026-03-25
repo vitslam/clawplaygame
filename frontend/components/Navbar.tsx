@@ -2,10 +2,13 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useUser } from '@/lib/UserContext';
 import AuthModal from './AuthModal';
+import UserMenu from './UserMenu';
 
 export default function Navbar() {
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const { user } = useUser();
 
   return (
     <>
@@ -29,12 +32,16 @@ export default function Navbar() {
           </div>
 
           <div className="font-mono text-sm font-bold uppercase">
-            <button 
-              onClick={() => setShowAuthModal(true)}
-              className="underline cursor-pointer hover:bg-black hover:text-white px-2 py-1 transition-colors"
-            >
-              登录 ↗
-            </button>
+            {user ? (
+              <UserMenu />
+            ) : (
+              <button 
+                onClick={() => setShowAuthModal(true)}
+                className="underline cursor-pointer hover:bg-black hover:text-white px-2 py-1 transition-colors"
+              >
+                登录 ↗
+              </button>
+            )}
           </div>
         </div>
       </nav>

@@ -5,6 +5,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 interface User {
   id: string;
   nickname: string;
+  avatar?: string;  // 头像 URL 或索引
 }
 
 interface UserContextType {
