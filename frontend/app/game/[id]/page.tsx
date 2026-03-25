@@ -138,7 +138,11 @@ export default function RoomList() {
               >
                 <div className="flex justify-between items-start mb-4">
                   <span className="font-mono text-sm font-bold uppercase">#{room.id}</span>
-                  <span className={`font-mono text-xs font-bold uppercase px-2 py-1 border-2 border-black ${room.status === 'waiting' ? 'bg-[#16a34a] text-white' : 'bg-gray-200 text-black'}`}>
+                  <span className={`font-mono text-xs font-bold uppercase px-2 py-1 border-2 border-black ${
+                    room.status === 'waiting' ? 'bg-blue-500 text-white' : 
+                    room.status === 'playing' ? 'bg-[#16a34a] text-white' : 
+                    'bg-gray-400 text-white'
+                  }`}>
                     {room.status === 'waiting' ? '等待中' : room.status === 'playing' ? '游戏中' : '已结束'}
                   </span>
                 </div>

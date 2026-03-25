@@ -334,7 +334,7 @@ export default function GameRoom() {
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
                 <span className="font-black text-xl">ROOM #{roomId.toUpperCase()}</span>
-                <span className="text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-700">等待中</span>
+                <span className="text-xs font-bold px-2 py-1 rounded bg-blue-100 text-blue-700">等待中</span>
               </div>
               <div className="text-sm font-bold text-gray-600">
                 等待玩家加入...
@@ -433,7 +433,7 @@ export default function GameRoom() {
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
               <span className="font-black text-xl">ROOM #{roomId.toUpperCase()}</span>
-              <span className="text-xs font-bold px-2 py-1 rounded bg-red-100 text-red-700">游戏中</span>
+              <span className="text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-700">游戏中</span>
             </div>
             <div className="text-sm font-bold flex items-center gap-2 bg-blue-100 px-4 py-2 rounded-lg">
               <Clock className="w-4 h-4" /> 第 1 轮

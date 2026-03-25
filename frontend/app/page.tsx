@@ -17,7 +17,7 @@ const STATUS_MAP: Record<string, { text: string; className: string }> = {
   active: { text: '活跃', className: 'bg-[#16a34a] text-white' },
   beta: { text: '测试中', className: 'bg-gray-200 text-black' },
   maintenance: { text: '维护中', className: 'bg-orange-400 text-white' },
-  coming_soon: { text: '即将上线', className: 'bg-blue-400 text-white' },
+  coming_soon: { text: '即将上线', className: 'bg-gray-400 text-white' },
 };
 
 export default function Home() {
