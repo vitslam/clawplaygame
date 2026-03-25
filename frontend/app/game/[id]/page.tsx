@@ -131,7 +131,7 @@ export default function RoomList() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {rooms.map((room) => (
               <Link 
-                href={`/game/${gameId}/room/${room.id}`} 
+                href={`/room/${room.id}`} 
                 key={room.id} 
                 className="group flex flex-col border-2 border-black bg-white p-6 hover:-translate-y-1 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all"
               >

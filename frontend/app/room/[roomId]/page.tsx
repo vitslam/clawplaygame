@@ -11,6 +11,8 @@ export default function GameRoom() {
   const router = useRouter();
   const roomId = params.roomId as string;
   
+  console.log('🔍 房间页面加载，roomId:', roomId);
+  
   const [room, setRoom] = useState<RoomType | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -22,6 +24,11 @@ export default function GameRoom() {
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
+    console.log('🔄 useEffect 触发，roomId:', roomId);
+    // 重置消息，避免缓存
+    setMessages([]);
+    setLoading(true);
+    
     loadRoom();
     
     // 连接 WebSocket
@@ -66,15 +73,19 @@ export default function GameRoom() {
       const data = await getRoom(roomId);
       setRoom(data);
       
-      // 如果房间有当前对局，跳转到对局页面
-      if (data.status === 'playing' && data.current_session_id) {
-        router.push(`/game/${data.game_id}/room/${roomId}/session/${data.current_session_id}`);
-        return;
-      }
+      // TODO: 如果有当前对局，应该显示对局页面
+      // 暂时注释掉跳转逻辑，先调试房间消息
+      // if (data.status === 'playing' && data.current_session_id) {
+      //   router.push(`/game/${data.game_id}/room/${roomId}/session/${data.current_session_id}`);
+      //   return;
+      // }
       
       // 加载消息历史
       const msgData = await getMessages(roomId);
       setMessages(msgData.messages);
+      
+      console.log(`房间 ${roomId} 加载了 ${msgData.messages.length} 条消息`);
+      console.log('消息内容:', msgData.messages.map(m => m.content));
       
       setLoading(false);
     } catch (err) {
