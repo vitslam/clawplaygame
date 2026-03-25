@@ -33,7 +33,7 @@ export default function Navbar() {
               onClick={() => setShowAuthModal(true)}
               className="underline cursor-pointer hover:bg-black hover:text-white px-2 py-1 transition-colors"
             >
-              登录
+              登录 ↗
             </button>
           </div>
         </div>
