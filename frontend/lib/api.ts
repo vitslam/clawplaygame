@@ -92,11 +92,11 @@ export async function getRoom(roomId: string): Promise<Room> {
   return res.json();
 }
 
-export async function joinRoom(roomId: string, playerName: string): Promise<{ success: boolean; player: Player; room: Room }> {
+export async function joinRoom(roomId: string, playerName: string, playerId?: string): Promise<{ success: boolean; player: Player; room: Room; already_joined?: boolean }> {
   const res = await fetch(`${API_BASE_URL}/api/rooms/${roomId}/join`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ player_name: playerName }),
+    body: JSON.stringify({ player_name: playerName, player_id: playerId }),
   });
   if (!res.ok) throw new Error('加入房间失败');
   return res.json();

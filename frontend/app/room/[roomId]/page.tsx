@@ -2,16 +2,16 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
-import { Send, User as UserIcon, Skull, Volume2, MicOff, Info, Clock, Users, Loader2, Play } from 'lucide-react';
+import { Send, User as UserIcon, Skull, Volume2, MicOff, Info, Clock, Users, Loader2, Play, LogOut } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
+import { useUser } from '@/lib/UserContext';
 import { getRoom, joinRoom, getMessages, sendMessage, createWebSocket, type Room as RoomType, type Message, type Player } from '@/lib/api';
 
 export default function GameRoom() {
   const params = useParams();
   const router = useRouter();
   const roomId = params.roomId as string;
-  
-  console.log('🔍 房间页面加载，roomId:', roomId);
+  const { user, setUser } = useUser();
   
   const [room, setRoom] = useState<RoomType | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -20,15 +20,14 @@ export default function GameRoom() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  // 弹窗状态
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [nickname, setNickname] = useState('');
+  
   const scrollRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    console.log('🔄 useEffect 触发，roomId:', roomId);
-    // 重置消息，避免缓存
-    setMessages([]);
-    setLoading(true);
-    
     loadRoom();
     
     // 连接 WebSocket
@@ -61,6 +60,22 @@ export default function GameRoom() {
       }
     };
   }, [roomId]);
+  
+  // 心跳：每 30 秒更新一次活跃时间
+  useEffect(() => {
+    if (!user) return;
+    
+    const heartbeat = async () => {
+      try {
+        await fetch(`/api/users/${user.id}/heartbeat`, { method: 'POST' });
+      } catch (e) {
+        console.error('Heartbeat failed:', e);
+      }
+    };
+    
+    const interval = setInterval(heartbeat, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -73,19 +88,25 @@ export default function GameRoom() {
       const data = await getRoom(roomId);
       setRoom(data);
       
-      // TODO: 如果有当前对局，应该显示对局页面
-      // 暂时注释掉跳转逻辑，先调试房间消息
-      // if (data.status === 'playing' && data.current_session_id) {
-      //   router.push(`/game/${data.game_id}/room/${roomId}/session/${data.current_session_id}`);
-      //   return;
-      // }
-      
       // 加载消息历史
       const msgData = await getMessages(roomId);
       setMessages(msgData.messages);
       
-      console.log(`房间 ${roomId} 加载了 ${msgData.messages.length} 条消息`);
-      console.log('消息内容:', msgData.messages.map(m => m.content));
+      // 检查是否已经在房间里
+      if (user) {
+        const alreadyInRoom = data.players.some(p => p.id === user.id);
+        if (alreadyInRoom) {
+          setPlayerId(user.id);
+        } else {
+          // 不在房间里，显示加入弹窗
+          setNickname(user.nickname);
+          setShowJoinModal(true);
+        }
+      } else if (data.status === 'waiting') {
+        // 没有用户且房间等待中，显示加入弹窗
+        setNickname('玩家_' + Math.random().toString(36).slice(2, 6));
+        setShowJoinModal(true);
+      }
       
       setLoading(false);
     } catch (err) {
@@ -94,16 +115,37 @@ export default function GameRoom() {
     }
   };
 
-  const handleJoin = async (playerName: string) => {
+  const handleJoin = async () => {
+    if (!nickname.trim()) {
+      alert('请输入昵称');
+      return;
+    }
+    
     try {
       const { joinRoom } = await import('@/lib/api');
-      const result = await joinRoom(roomId, playerName);
+      const result = await joinRoom(roomId, nickname);
+      
+      // 保存用户
+      const newUser = { id: result.player.id, nickname };
+      setUser(newUser);
       setPlayerId(result.player.id);
       setRoom(result.room);
+      setShowJoinModal(false);
+      
+      if (result.already_joined) {
+        console.log('已经在这个房间里了');
+      }
+      
       loadRoom();
     } catch (err) {
       alert('加入房间失败：' + (err as Error).message);
     }
+  };
+  
+  const handleLeaveRoom = async () => {
+    // 清除本地玩家 ID，但保留用户信息
+    setPlayerId('');
+    router.push('/');
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -175,36 +217,43 @@ export default function GameRoom() {
   // 游戏中且公开的房间，可以直接观战（不需要加入）
   const isPlayingAndPublic = room?.status === 'playing' && room?.is_public;
   
-  if (!playerId && !isPlayingAndPublic) {
+  // 加入房间弹窗
+  if (showJoinModal) {
     return (
       <div className="flex flex-col h-screen bg-[#f4f4f4]">
         <Navbar />
         <main className="flex-1 flex items-center justify-center p-4">
           <div className="max-w-md w-full bg-white border-2 border-black p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-            <h2 className="text-3xl font-black uppercase mb-6 text-center">加入房间</h2>
+            <h2 className="text-3xl font-black uppercase mb-6 text-center">
+              {room?.status === 'playing' ? '加入观战' : '加入房间'}
+            </h2>
             <p className="font-mono text-sm mb-6 text-center">房间 #{roomId}</p>
-            <p className="font-mono text-xs text-gray-600 mb-4 text-center">
-              {room?.status === 'playing' ? '（游戏进行中，加入后只能观战）' : ''}
-            </p>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              handleJoin(formData.get('playerName') as string);
-            }}>
-              <input
-                name="playerName"
-                type="text"
-                placeholder="你的昵称"
-                className="w-full border-2 border-black px-4 py-3 font-mono mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-              <button 
-                type="submit"
-                className="w-full bg-black text-white py-3 font-bold uppercase hover:bg-white hover:text-black border-2 border-black transition-all"
-              >
-                {room?.status === 'playing' ? '加入观战' : '加入游戏'}
-              </button>
-            </form>
+            <div className="space-y-4">
+              <div>
+                <label className="block font-bold uppercase mb-2 text-sm">你的昵称</label>
+                <input
+                  type="text"
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
+                  placeholder="输入昵称"
+                  className="w-full border-2 border-black px-4 py-3 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowJoinModal(false)}
+                  className="flex-1 bg-gray-200 text-black px-6 py-3 border-2 border-black font-bold uppercase hover:bg-gray-300 transition-all"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleJoin}
+                  className="flex-1 bg-black text-white px-6 py-3 border-2 border-black font-bold uppercase hover:bg-white hover:text-black transition-all"
+                >
+                  {room?.status === 'playing' ? '开始观战' : '加入游戏'}
+                </button>
+              </div>
+            </div>
           </div>
         </main>
       </div>
@@ -251,21 +300,31 @@ export default function GameRoom() {
               ))}
             </div>
             
-            {/* 房主控制区 */}
-            {room?.players[0]?.id === playerId && (
-              <div className="p-4 border-t-2 border-black bg-gray-50">
+            {/* 控制区 */}
+            <div className="p-4 border-t-2 border-black bg-gray-50 space-y-2">
+              {room?.players[0]?.id === playerId && (
+                <>
+                  <button
+                    onClick={handleStartGame}
+                    disabled={(room?.players.length || 0) < (room?.game_id === 'avalon' ? 5 : room?.game_id === 'werewolf' ? 6 : 3)}
+                    className="w-full bg-green-600 text-white py-3 font-bold uppercase hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                  >
+                    <Play className="w-5 h-5" /> 开始游戏
+                  </button>
+                  <p className="text-xs text-gray-600 text-center">
+                    最小人数：{room?.game_id === 'avalon' ? '5 人（阿瓦隆）' : room?.game_id === 'werewolf' ? '6 人（狼人杀）' : '3 人'}
+                  </p>
+                </>
+              )}
+              {playerId && (
                 <button
-                  onClick={handleStartGame}
-                  disabled={(room?.players.length || 0) < (room?.game_id === 'avalon' ? 5 : room?.game_id === 'werewolf' ? 6 : 3)}
-                  className="w-full bg-green-600 text-white py-3 font-bold uppercase hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                  onClick={handleLeaveRoom}
+                  className="w-full bg-red-600 text-white py-3 font-bold uppercase hover:bg-red-700 transition-all flex items-center justify-center gap-2"
                 >
-                  <Play className="w-5 h-5" /> 开始游戏
+                  <LogOut className="w-5 h-5" /> 退出房间
                 </button>
-                <p className="text-xs text-gray-600 mt-2 text-center">
-                  最小人数：{room?.game_id === 'avalon' ? '5 人（阿瓦隆）' : room?.game_id === 'werewolf' ? '6 人（狼人杀）' : '3 人'}
-                </p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Middle Column: Chat */}
