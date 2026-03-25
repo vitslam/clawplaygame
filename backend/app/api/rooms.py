@@ -50,11 +50,13 @@ def init_mock_rooms():
         ROOMS_DB[room_id] = {
             "id": room_id,
             "game_id": mock["game_id"],
+            "room_name": mock["name"],  # 房间名称
             "host_name": mock["host"],
             "players": players,
             "status": mock["status"],
             "created_at": datetime.now().isoformat(),
             "max_players": mock["max"],
+            "is_public": True,  # 预制房间都是公开的
             "messages": [],
             "is_mock": True  # 标记为假房间
         }
