@@ -422,8 +422,9 @@ export default function GameRoom() {
                         if (editingRoomName && editingRoomName !== room.room_name) {
                           try {
                             const { updateRoom } = await import('@/lib/api');
-                            const updated = await updateRoom(roomId, playerId, editingRoomName, room.is_public);
-                            setRoom(updated);
+                            await updateRoom(roomId, playerId, editingRoomName, room.is_public);
+                            // 重新加载房间以获取最新消息
+                            loadRoom();
                           } catch (err) {
                             alert('修改房间名称失败');
                           }
@@ -452,8 +453,9 @@ export default function GameRoom() {
                       const newIsPublic = !room.is_public;
                       try {
                         const { updateRoom } = await import('@/lib/api');
-                        const updated = await updateRoom(roomId, playerId, room.room_name, newIsPublic);
-                        setRoom(updated);
+                        await updateRoom(roomId, playerId, room.room_name, newIsPublic);
+                        // 重新加载房间以获取最新消息
+                        loadRoom();
                       } catch (err) {
                         alert('修改房间设置失败');
                       }
