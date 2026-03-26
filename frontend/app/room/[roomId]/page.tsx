@@ -267,7 +267,6 @@ export default function GameRoom() {
 
   // 房主功能：解散房间
   const handleDeleteRoom = async () => {
-    if (!confirm('确定要解散房间吗？此操作不可恢复！')) return;
     try {
       const { deleteRoom } = await import('@/lib/api');
       await deleteRoom(roomId, playerId);
