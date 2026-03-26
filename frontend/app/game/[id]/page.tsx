@@ -16,6 +16,7 @@ interface Room {
   players: any[];
   status: string;
   max_players: number;
+  is_public: boolean;
 }
 
 const GAME_NAMES: Record<string, string> = {
@@ -187,7 +188,7 @@ export default function RoomList() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Unlock className="w-5 h-5" />
-                    <span>公开</span>
+                    <span>{room.is_public ? '公开' : '私有'}</span>
                   </div>
                 </div>
               </Link>

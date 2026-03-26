@@ -28,6 +28,7 @@ export default function GameRoom() {
   const [showHostMenu, setShowHostMenu] = useState(false); // 房主菜单
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null); // 选中的玩家
   const [editingRoomName, setEditingRoomName] = useState(''); // 编辑房间名
+  const [editingIsPublic, setEditingIsPublic] = useState(false); // 编辑房间公开状态
   const [showRoomSettings, setShowRoomSettings] = useState(false); // 房间设置弹窗
   
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -238,7 +239,7 @@ export default function GameRoom() {
     if (!room) return;
     try {
       const { updateRoom } = await import('@/lib/api');
-      const updated = await updateRoom(roomId, playerId, editingRoomName || room.room_name, room.is_public);
+      const updated = await updateRoom(roomId, playerId, editingRoomName || room.room_name, editingIsPublic);
       setRoom(updated);
       setShowRoomSettings(false);
       alert('房间信息已更新');
@@ -403,7 +404,11 @@ export default function GameRoom() {
             <div className="flex items-center gap-3 font-mono text-sm font-bold uppercase">
               {isWaiting && isHost && (
                 <button
-                  onClick={() => { setEditingRoomName(room.room_name); setShowRoomSettings(true); }}
+                  onClick={() => { 
+                    setEditingRoomName(room.room_name); 
+                    setEditingIsPublic(room.is_public || false);
+                    setShowRoomSettings(true); 
+                  }}
                   className="text-xs bg-gray-100 border-2 border-black px-3 py-1 hover:bg-black hover:text-white transition-colors"
                 >
                   房间设置
@@ -646,8 +651,8 @@ export default function GameRoom() {
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={room?.is_public || false}
-                    onChange={(e) => setRoom({ ...(room as any), is_public: e.target.checked })}
+                    checked={editingIsPublic}
+                    onChange={(e) => setEditingIsPublic(e.target.checked)}
                     className="w-5 h-5 border-2 border-black"
                   />
                   <span className="font-bold uppercase text-sm">公开房间</span>
