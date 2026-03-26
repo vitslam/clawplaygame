@@ -507,7 +507,7 @@ export default function GameRoom() {
               const isMe = (player.player_id || player.id) === playerId;
               const isAlive = player.status === 'alive';
               const isHost = player.role === 'host' || (room as any).host_id === player.player_id;
-              const isReady = player.is_ready || false;
+              const isReady = !!(player.is_ready || player.is_ready === 1);
               
               return (
                 <div 
@@ -522,14 +522,14 @@ export default function GameRoom() {
                     isAlive ? 'bg-white hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-gray-200 opacity-60'
                   } ${isMe ? 'ring-4 ring-[#16a34a] ring-offset-2' : ''} ${isReady ? 'ring-2 ring-green-500' : ''}`}
                 >
-                  {isMe && (
+                  {isMe && !isReady && (
                     <div className="absolute top-2 left-2 font-mono text-[10px] font-bold uppercase bg-black text-white px-2 py-1">你</div>
                   )}
-                  {isHost && (
+                  {isHost && !isReady && (
                     <div className="absolute top-2 left-2 font-mono text-[10px] font-bold uppercase bg-orange-500 text-white px-2 py-1">房主</div>
                   )}
                   {isReady && (
-                    <div className="absolute top-2 left-2 font-mono text-[10px] font-bold uppercase bg-green-600 text-white px-2 py-1">已准备</div>
+                    <div className="absolute top-2 left-2 font-mono text-[10px] font-bold uppercase bg-green-600 text-white px-2 py-1">✓ 已准备</div>
                   )}
                   <div className="absolute top-2 right-2 font-mono text-xs font-bold uppercase">#{index + 1}</div>
                   
@@ -653,12 +653,12 @@ export default function GameRoom() {
                 );
               }
               
-              if (msg.content.includes('查验了') || msg.content.includes('使用')) {
+              if (msg.type === 'action' || msg.content.includes('查验了') || msg.content.includes('使用') || msg.content.includes('准备')) {
                 return (
                   <div key={msg.id} className="flex flex-col">
                     <div className="text-[10px] text-gray-500 font-bold mb-1">{time}</div>
                     <div className="font-bold text-[#2563eb] uppercase border-l-2 border-[#2563eb] pl-2">
-                      动作：{msg.player_name} {msg.content}
+                      动作：{msg.content}
                     </div>
                   </div>
                 );

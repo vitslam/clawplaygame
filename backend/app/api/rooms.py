@@ -418,8 +418,18 @@ async def toggle_ready(room_id: str, request: ToggleReadyRequest):
     if room["status"] != "waiting":
         raise HTTPException(status_code=400, detail="游戏已开始，无法切换准备状态")
     
+    # 获取玩家名称
+    players = db.get_room_players(room_id)
+    player = next((p for p in players if p["player_id"] == request.player_id), None)
+    if not player:
+        raise HTTPException(status_code=404, detail="玩家不在房间中")
+    
     # 切换准备状态
     is_ready = db.toggle_player_ready(room_id, request.player_id)
+    
+    # 发送系统消息
+    action_text = "已准备" if is_ready else "取消了准备"
+    db.add_message(room_id, f"{player['player_name']} {action_text}", "action", request.player_id, player['player_name'])
     
     # 获取更新后的玩家信息
     players = db.get_room_players(room_id)
