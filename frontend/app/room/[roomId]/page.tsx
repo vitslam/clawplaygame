@@ -141,11 +141,29 @@ export default function GameRoom() {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim() || !playerId) return;
+    
+    const now = new Date();
+    const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+    
+    // 先添加到本地消息列表（立即显示）
+    const newMessage = {
+      id: Date.now().toString(),
+      player_id: playerId,
+      player_name: (me as any)?.player_name || user?.nickname || '我',
+      type: 'chat',
+      content: inputValue,
+      timestamp: now.toISOString()
+    };
+    setMessages([...messages, newMessage]);
+    setInputValue('');
+    
+    // 发送到服务器
     try {
       await sendMessage(roomId, playerId, inputValue);
-      setInputValue('');
     } catch (err) {
       alert('发送失败：' + (err as Error).message);
+      // 发送失败则移除刚添加的消息
+      setMessages(messages);
     }
   };
 
