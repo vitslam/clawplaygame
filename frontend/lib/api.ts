@@ -73,9 +73,14 @@ export async function createRoom(
   playerName: string,
   roomName: string,
   maxPlayers: number = 10,
-  isPublic: boolean = true
+  isPublic: boolean = true,
+  playerId?: string
 ): Promise<Room> {
-  const res = await fetch(`${API_BASE_URL}/api/rooms/${gameId}/rooms`, {
+  const url = playerId 
+    ? `${API_BASE_URL}/api/rooms/${gameId}/rooms?player_id=${playerId}`
+    : `${API_BASE_URL}/api/rooms/${gameId}/rooms`;
+  
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 

@@ -157,13 +157,14 @@ async def list_rooms(game_id: str):
 
 
 @router.post("/{game_id}/rooms", response_model=RoomResponse)
-async def create_room(game_id: str, request: CreateRoomRequest):
+async def create_room(game_id: str, request: CreateRoomRequest, player_id: str = None):
     """创建新游戏房间"""
     room_id = str(uuid.uuid4())[:8]
-    host_id = str(uuid.uuid4())[:6]
+    # 如果传入了 player_id（已登录用户），则使用；否则生成新的
+    host_id = player_id or str(uuid.uuid4())[:12]
     
-    # 创建用户
-    db.create_user(host_id, request.player_name)
+    # 创建/更新用户
+    db.create_or_update_user(host_id, request.player_name)
     
     # 创建房间
     db.create_room(
