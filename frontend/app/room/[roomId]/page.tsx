@@ -74,17 +74,17 @@ export default function GameRoom() {
       setMessages(msgData.messages);
       
       if (user) {
+        // 已登录用户：检查是否已在房间
         const alreadyInRoom = data.players.some((p: any) => (p.id || p.player_id) === user.id);
         if (alreadyInRoom) {
           setPlayerId(user.id);
-        } else {
-          setNickname(user.nickname);
-          setShowJoinModal(true);
+        } else if (data.status === 'waiting') {
+          // 等待中的房间，已登录用户直接加入
+          handleAutoJoin(user.nickname);
         }
-      } else if (data.status === 'waiting') {
-        setNickname('玩家_' + Math.random().toString(36).slice(2, 6));
-        setShowJoinModal(true);
+        // 游戏中的房间，已登录用户可以观战（不加入）
       }
+      // 未登录用户：不弹窗，只能观战（如果是游戏中）
       
       setLoading(false);
     } catch (err) {
@@ -93,6 +93,22 @@ export default function GameRoom() {
     }
   };
 
+  // 自动加入（已登录用户）
+  const handleAutoJoin = async (nickname: string) => {
+    try {
+      const { joinRoom } = await import('@/lib/api');
+      const result = await joinRoom(roomId, nickname, user?.id);
+      const newUser = { id: result.player.id || result.player.player_id || user?.id || '', nickname };
+      setUser(newUser);
+      setPlayerId(result.player.id || result.player.player_id || user?.id || '');
+      setRoom(result.room);
+      loadRoom();
+    } catch (err) {
+      alert('加入房间失败：' + (err as Error).message);
+    }
+  };
+
+  // 手动加入（弹窗）
   const handleJoin = async () => {
     if (!nickname.trim()) {
       alert('请输入昵称');
@@ -205,6 +221,25 @@ export default function GameRoom() {
   const me = room?.players.find((p: any) => p.player_id === playerId);
 
   if (showJoinModal) {
+    // 未登录用户不能加入，直接显示观战提示
+    if (!user) {
+      return (
+        <div className="flex flex-col h-screen bg-[#f4f4f4]">
+          <Navbar />
+          <main className="flex-1 flex items-center justify-center p-4">
+            <div className="max-w-md w-full bg-white border-2 border-black p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-center">
+              <h2 className="text-2xl font-black uppercase mb-4">需要登录</h2>
+              <p className="text-gray-600 mb-6">登录后才能加入房间，当前只能观战。</p>
+              <button onClick={() => setShowJoinModal(false)} className="bg-black text-white px-6 py-3 border-2 border-black font-bold uppercase hover:bg-white hover:text-black">
+                继续观战
+              </button>
+            </div>
+          </main>
+        </div>
+      );
+    }
+    
+    // 已登录用户显示加入弹窗
     return (
       <div className="flex flex-col h-screen bg-[#f4f4f4]">
         <Navbar />
