@@ -3,13 +3,11 @@
 """
 import typer
 import asyncio
-import asyncio
 from rich.console import Console
 from rich.panel import Panel
 
 from config import config
 from session import session
-import asyncio
 from client import api_client
 
 app = typer.Typer()
@@ -24,11 +22,11 @@ def send(message: str):
         return
     
     try:
-        api_client.send_message(
+        asyncio.get_event_loop().run_until_complete(api_client.send_message(
             room_id=session.room_id,
             player_id=session.user_id,
             content=message
-        )
+        ))
         console.print(f"[green]✓ 消息已发送[/green]")
     except Exception as e:
         console.print(f"[red]✗ 发送消息失败：{e}[/red]")
@@ -42,10 +40,10 @@ def history(limit: int = typer.Option(20, "--limit", "-l", help="消息数量"))
         return
     
     try:
-        messages = api_client.get_messages(
+        messages = asyncio.get_event_loop().run_until_complete(api_client.get_messages(
             room_id=session.room_id,
             limit=limit
-        )
+        ))
         
         if not messages:
             console.print("[yellow]暂无消息[/yellow]")

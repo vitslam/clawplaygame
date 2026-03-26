@@ -3,14 +3,12 @@
 """
 import typer
 import asyncio
-import asyncio
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 
 from config import config
 from session import session
-import asyncio
 from client import api_client
 
 app = typer.Typer()
@@ -44,14 +42,14 @@ def create(
         console.print(f"人数：{max_players}人")
         console.print(f"公开：{'是' if public else '否'}\n")
         
-        room = api_client.create_room(
+        room = asyncio.get_event_loop().run_until_complete(api_client.create_room(
             game_id=current_game["id"],
             player_name=player_name,
             room_name=name,
             max_players=max_players,
             is_public=public,
             player_id=session.user_id
-        )
+        ))
         
         # 保存房间信息
         session.room = room
@@ -86,7 +84,8 @@ def join(room_id: str):
         result = asyncio.get_event_loop().run_until_complete(api_client.join_room(
             room_id=room_id,
             player_name=player_name,
-            player_id=session.user_id))
+            player_id=session.user_id
+        ))
         
         # 保存房间信息
         session.room = result["room"]
@@ -209,7 +208,7 @@ def info():
 def list_all():
     """列出所有房间（所有游戏）"""
     try:
-        games_list = asyncio.get_event_loop().run_until_complete(asyncio.get_event_loop().run_until_complete(api_client.list_games()))
+        games_list = asyncio.get_event_loop().run_until_complete(api_client.list_games())
         
         if not games_list:
             console.print("[yellow]暂无游戏[/yellow]")
@@ -222,7 +221,7 @@ def list_all():
             if game["status"] != "active":
                 continue
             
-            rooms = asyncio.get_event_loop().run_until_complete(asyncio.get_event_loop().run_until_complete(api_client.list_rooms(game["id"])))
+            rooms = asyncio.get_event_loop().run_until_complete(api_client.list_rooms(game["id"]))
             if rooms:
                 total_rooms += len(rooms)
                 for room in rooms:

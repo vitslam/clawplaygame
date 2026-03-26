@@ -3,7 +3,6 @@
 """
 import typer
 import asyncio
-import asyncio
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt
@@ -11,7 +10,6 @@ from rich.table import Table
 
 from config import config
 from session import session
-import asyncio
 from client import api_client
 
 app = typer.Typer()
@@ -78,7 +76,7 @@ def execute_command(cmd_line: str) -> bool:
                 console.print("[yellow]⚠️  未登录[/yellow]")
         
         elif cmd == "games":
-            games_list = asyncio.get_event_loop().run_until_complete(asyncio.get_event_loop().run_until_complete(api_client.list_games()))
+            games_list = asyncio.get_event_loop().run_until_complete(api_client.list_games())
             table = Table(title="🎮 游戏列表")
             table.add_column("ID", style="cyan")
             table.add_column("名称", style="green")
@@ -90,7 +88,7 @@ def execute_command(cmd_line: str) -> bool:
         
         elif cmd == "select" and args:
             game_id = args[0]
-            game = asyncio.get_event_loop().run_until_complete(asyncio.get_event_loop().run_until_complete(api_client.get_game(game_id)))
+            game = asyncio.get_event_loop().run_until_complete(api_client.get_game(game_id))
             config.set("current_game", game)
             console.print(f"[green]✓ 已选择：{game['name']}[/green]")
         
@@ -99,7 +97,7 @@ def execute_command(cmd_line: str) -> bool:
             if not current_game:
                 console.print("[yellow]⚠️  请先选择游戏：select <game_id>[/yellow]")
                 return True
-            rooms = asyncio.get_event_loop().run_until_complete(asyncio.get_event_loop().run_until_complete(api_client.list_rooms(current_game["id"])))
+            rooms = asyncio.get_event_loop().run_until_complete(api_client.list_rooms(current_game["id"]))
             table = Table(title=f"🏠 {current_game['name']} 房间")
             table.add_column("ID", style="cyan")
             table.add_column("名称", style="green")
@@ -124,12 +122,12 @@ def execute_command(cmd_line: str) -> bool:
                 console.print("[yellow]⚠️  请先选择游戏[/yellow]")
                 return True
             name = " ".join(args)
-            room = api_client.create_room(
+            room = asyncio.get_event_loop().run_until_complete(api_client.create_room(
                 game_id=current_game["id"],
                 player_name=session.user_name,
                 room_name=name,
                 player_id=session.user_id
-            )
+            ))
             session.room = room
             console.print(f"[green]✓ 房间创建成功：{name}[/green]")
         
@@ -138,11 +136,11 @@ def execute_command(cmd_line: str) -> bool:
                 console.print("[yellow]⚠️  请先登录[/yellow]")
                 return True
             room_id = args[0]
-            result = api_client.join_room(
+            result = asyncio.get_event_loop().run_until_complete(api_client.join_room(
                 room_id=room_id,
                 player_name=session.user_name,
                 player_id=session.user_id
-            )
+            ))
             session.room = result["room"]
             console.print(f"[green]✓ 已加入房间[/green]")
         
@@ -167,31 +165,31 @@ def execute_command(cmd_line: str) -> bool:
             if not session.in_room:
                 console.print("[yellow]⚠️  不在房间中[/yellow]")
                 return True
-            result = api_client.toggle_ready(
+            result = asyncio.get_event_loop().run_until_complete(api_client.toggle_ready(
                 room_id=session.room_id,
                 player_id=session.user_id
-            )
+            ))
             status = "已准备" if result["is_ready"] else "已取消准备"
             console.print(f"[green]✓ {status}[/green]")
-            session.room = asyncio.get_event_loop().run_until_complete(asyncio.get_event_loop().run_until_complete(api_client.get_room(session.room_id)))
+            session.room = asyncio.get_event_loop().run_until_complete(api_client.get_room(session.room_id))
         
         elif cmd == "send" and args:
             if not session.in_room:
                 console.print("[yellow]⚠️  不在房间中[/yellow]")
                 return True
             message = " ".join(args)
-            api_client.send_message(
+            asyncio.get_event_loop().run_until_complete(api_client.send_message(
                 room_id=session.room_id,
                 player_id=session.user_id,
                 content=message
-            )
+            ))
             console.print(f"[green]✓ 已发送[/green]")
         
         elif cmd == "history":
             if not session.in_room:
                 console.print("[yellow]⚠️  不在房间中[/yellow]")
                 return True
-            messages = asyncio.get_event_loop().run_until_complete(asyncio.get_event_loop().run_until_complete(api_client.get_messages(room_id=session.room_id, limit=20)))
+            messages = asyncio.get_event_loop().run_until_complete(api_client.get_messages(room_id=session.room_id, limit=20))
             for msg in messages:
                 ts = msg.get("timestamp", "")[:19]
                 if msg["type"] == "chat":
@@ -208,21 +206,21 @@ def execute_command(cmd_line: str) -> bool:
             
             subcmd = args[0]
             if subcmd == "start":
-                asyncio.get_event_loop().run_until_complete(asyncio.get_event_loop().run_until_complete(api_client.start_game(session.room_id)))
+                asyncio.get_event_loop().run_until_complete(api_client.start_game(session.room_id))
                 console.print("[green]✓ 游戏已开始[/green]")
             elif subcmd == "kick" and len(args) > 1:
                 player_id = args[1]
-                api_client.kick_player(
+                asyncio.get_event_loop().run_until_complete(api_client.kick_player(
                     room_id=session.room_id,
                     player_id=player_id,
                     host_id=session.user_id
-                )
+                ))
                 console.print("[green]✓ 玩家已踢出[/green]")
             elif subcmd == "dismiss":
-                api_client.delete_room(
+                asyncio.get_event_loop().run_until_complete(api_client.delete_room(
                     room_id=session.room_id,
                     host_id=session.user_id
-                )
+                ))
                 console.print("[green]✓ 房间已解散[/green]")
                 session.room = None
             else:
