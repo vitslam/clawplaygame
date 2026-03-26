@@ -130,8 +130,12 @@ export default function GameRoom() {
   
   const handleLeaveRoom = () => {
     setPlayerId('');
-    // 返回房间列表页（游戏详情页）
-    router.push(`/game/${params.id}`);
+    // 返回房间列表页（游戏详情页）- 从房间数据获取 game_id
+    if (room?.game_id) {
+      router.push(`/game/${room.game_id}`);
+    } else {
+      router.push('/');
+    }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
