@@ -27,9 +27,8 @@ export default function GameRoom() {
   // 房主功能状态
   const [showHostMenu, setShowHostMenu] = useState(false); // 房主菜单
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null); // 选中的玩家
-  const [editingRoomName, setEditingRoomName] = useState(''); // 编辑房间名
-  const [editingIsPublic, setEditingIsPublic] = useState(false); // 编辑房间公开状态
-  const [showRoomSettings, setShowRoomSettings] = useState(false); // 房间设置弹窗
+  const [isEditingName, setIsEditingName] = useState(false); // 是否正在编辑房间名
+  const [editingRoomName, setEditingRoomName] = useState(''); // 编辑中的房间名
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -234,20 +233,6 @@ export default function GameRoom() {
     }
   };
 
-  // 房主功能：修改房间信息
-  const handleUpdateRoom = async () => {
-    if (!room) return;
-    try {
-      const { updateRoom } = await import('@/lib/api');
-      const updated = await updateRoom(roomId, playerId, editingRoomName || room.room_name, editingIsPublic);
-      setRoom(updated);
-      setShowRoomSettings(false);
-      alert('房间信息已更新');
-    } catch (err) {
-      alert('修改房间信息失败：' + (err as Error).message);
-    }
-  };
-
   // 房主功能：解散房间
   const handleDeleteRoom = async () => {
     if (!confirm('确定要解散房间吗？此操作不可恢复！')) return;
@@ -394,26 +379,62 @@ export default function GameRoom() {
               >
                 ← 离开房间
               </button>
-              <div>
+              {isWaiting && isHost ? (
+                <div className="flex items-center gap-2">
+                  {isEditingName ? (
+                    <input
+                      type="text"
+                      value={editingRoomName}
+                      onChange={(e) => setEditingRoomName(e.target.value)}
+                      onBlur={async () => {
+                        setIsEditingName(false);
+                        if (editingRoomName && editingRoomName !== room.room_name) {
+                          try {
+                            const { updateRoom } = await import('@/lib/api');
+                            const updated = await updateRoom(roomId, playerId, editingRoomName, room.is_public);
+                            setRoom(updated);
+                          } catch (err) {
+                            alert('修改房间名称失败');
+                          }
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          (e.target as HTMLInputElement).blur();
+                        }
+                      }}
+                      autoFocus
+                      className="border-2 border-black px-2 py-1 font-mono text-sm focus:outline-none"
+                    />
+                  ) : (
+                    <h1 
+                      onClick={() => { setEditingRoomName(room.room_name); setIsEditingName(true); }}
+                      className="text-2xl font-black uppercase tracking-tight cursor-pointer hover:bg-black hover:text-white px-2 py-1 transition-colors"
+                    >
+                      {room?.room_name || `房间 #${roomId}`}
+                    </h1>
+                  )}
+                  <button
+                    onClick={async () => {
+                      const newIsPublic = !room.is_public;
+                      try {
+                        const { updateRoom } = await import('@/lib/api');
+                        const updated = await updateRoom(roomId, playerId, room.room_name, newIsPublic);
+                        setRoom(updated);
+                      } catch (err) {
+                        alert('修改房间设置失败');
+                      }
+                    }}
+                    className="text-xs bg-gray-100 border-2 border-black px-3 py-1 hover:bg-black hover:text-white transition-colors"
+                  >
+                    {room?.is_public ? '公开' : '私有'}
+                  </button>
+                </div>
+              ) : (
                 <h1 className="text-2xl font-black uppercase tracking-tight">{room?.room_name || `房间 #${roomId}`}</h1>
-                {isWaiting && isHost && (
-                  <span className="text-xs font-bold text-orange-600 uppercase">房主</span>
-                )}
-              </div>
+              )}
             </div>
             <div className="flex items-center gap-3 font-mono text-sm font-bold uppercase">
-              {isWaiting && isHost && (
-                <button
-                  onClick={() => { 
-                    setEditingRoomName(room.room_name); 
-                    setEditingIsPublic(room.is_public || false);
-                    setShowRoomSettings(true); 
-                  }}
-                  className="text-xs bg-gray-100 border-2 border-black px-3 py-1 hover:bg-black hover:text-white transition-colors"
-                >
-                  房间设置
-                </button>
-              )}
               {room?.status === 'playing' && (
                 <>
                   <span className="flex items-center gap-2 text-[#dc2626]">
@@ -632,54 +653,44 @@ export default function GameRoom() {
         </div>
       )}
       
-      {/* 房间设置弹窗 */}
-      {showRoomSettings && (
+      {/* 房主操作弹窗 */}
+      {showHostMenu && selectedPlayer && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white border-2 border-black p-6 max-w-sm w-full shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-            <h3 className="text-xl font-black uppercase mb-4">房间设置</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block font-bold uppercase mb-2 text-sm">房间名称</label>
-                <input
-                  type="text"
-                  value={editingRoomName}
-                  onChange={(e) => setEditingRoomName(e.target.value)}
-                  className="w-full border-2 border-black px-4 py-2 font-mono focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editingIsPublic}
-                    onChange={(e) => setEditingIsPublic(e.target.checked)}
-                    className="w-5 h-5 border-2 border-black"
-                  />
-                  <span className="font-bold uppercase text-sm">公开房间</span>
-                </label>
-              </div>
-              <div className="space-y-2 pt-4">
-                <button
-                  onClick={handleUpdateRoom}
-                  className="w-full bg-black text-white py-3 border-2 border-black font-bold uppercase hover:bg-white hover:text-black transition-colors"
-                >
-                  保存
-                </button>
-                <button
-                  onClick={handleDeleteRoom}
-                  className="w-full bg-red-600 text-white py-3 border-2 border-red-700 font-bold uppercase hover:bg-red-700 transition-colors"
-                >
-                  解散房间
-                </button>
-                <button
-                  onClick={() => setShowRoomSettings(false)}
-                  className="w-full bg-gray-200 text-black py-3 border-2 border-black font-bold uppercase hover:bg-gray-300 transition-colors"
-                >
-                  取消
-                </button>
-              </div>
+            <h3 className="text-xl font-black uppercase mb-4">玩家：{selectedPlayer.player_name}</h3>
+            <div className="space-y-3">
+              <button
+                onClick={() => handleKickPlayer(selectedPlayer.player_id)}
+                className="w-full bg-red-600 text-white py-3 border-2 border-red-700 font-bold uppercase hover:bg-red-700 transition-colors"
+              >
+                移出房间
+              </button>
+              <button
+                onClick={() => handleTransferHost(selectedPlayer.player_id)}
+                className="w-full bg-orange-500 text-white py-3 border-2 border-orange-600 font-bold uppercase hover:bg-orange-600 transition-colors"
+              >
+                移交房主
+              </button>
+              <button
+                onClick={() => { setSelectedPlayer(null); setShowHostMenu(false); }}
+                className="w-full bg-gray-200 text-black py-3 border-2 border-black font-bold uppercase hover:bg-gray-300 transition-colors"
+              >
+                取消
+              </button>
             </div>
           </div>
+        </div>
+      )}
+      
+      {/* 解散房间按钮（房主专用） */}
+      {isWaiting && isHost && (
+        <div className="fixed bottom-4 right-4">
+          <button
+            onClick={handleDeleteRoom}
+            className="bg-red-600 text-white px-4 py-2 border-2 border-red-700 font-bold uppercase hover:bg-red-700 transition-colors shadow-lg"
+          >
+            解散房间
+          </button>
         </div>
       )}
     </div>
