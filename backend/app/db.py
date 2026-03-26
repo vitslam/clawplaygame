@@ -388,14 +388,19 @@ def add_message(room_id: str, content: str, message_type: str = 'chat',
                 player_id: Optional[str] = None, player_name: Optional[str] = None) -> bool:
     """添加消息"""
     import uuid
+    from datetime import datetime, timezone, timedelta
+    
     message_id = f"msg_{uuid.uuid4().hex[:8]}"
+    # 使用上海时区（UTC+8）
+    shanghai_tz = timezone(timedelta(hours=8))
+    created_at = datetime.now(shanghai_tz).strftime('%Y-%m-%d %H:%M:%S')
     
     with get_db() as conn:
         try:
             conn.execute("""
-                INSERT INTO messages (id, room_id, player_id, player_name, message_type, content)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (message_id, room_id, player_id, player_name, message_type, content))
+                INSERT INTO messages (id, room_id, player_id, player_name, message_type, content, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (message_id, room_id, player_id, player_name, message_type, content, created_at))
             conn.commit()
             return True
         except Exception as e:

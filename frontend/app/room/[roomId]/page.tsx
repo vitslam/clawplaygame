@@ -286,9 +286,10 @@ export default function GameRoom() {
     if (typeof ts === 'string' && /^\d+$/.test(ts)) {
       date = new Date(parseInt(ts));
     }
-    // SQLite 格式：YYYY-MM-DD HH:MM:SS
+    // SQLite 格式：YYYY-MM-DD HH:MM:SS（视为 UTC 时间，需要转换为上海时区）
     else if (typeof ts === 'string' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(ts)) {
-      date = new Date(ts.replace(' ', 'T')); // 转为 ISO 格式
+      // 将 SQLite 时间视为 UTC，添加 Z 后缀
+      date = new Date(ts.replace(' ', 'T') + 'Z');
     }
     // ISO 格式或其他
     else {
@@ -301,7 +302,13 @@ export default function GameRoom() {
       return '00:00:00';
     }
     
-    return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    // 使用上海时区（Asia/Shanghai）
+    return date.toLocaleTimeString('zh-CN', { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit',
+      timeZone: 'Asia/Shanghai'
+    });
   };
 
   if (loading) {
