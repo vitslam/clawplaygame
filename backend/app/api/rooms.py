@@ -173,6 +173,7 @@ async def create_room(game_id: str, request: CreateRoomRequest, player_id: str =
     
     # 获取房间数据
     room_data = RoomService.get_room(room_id)
+    room_data["players"] = db.get_room_players(room_id)
     if not room_data:
         raise HTTPException(status_code=500, detail="创建房间失败")
     
