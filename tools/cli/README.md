@@ -4,11 +4,11 @@
 
 ## 项目状态
 
-**当前阶段**: Phase 1 - 基础框架 🚧
+**当前阶段**: Phase 1 - 基础框架 ✅
 
 | Phase | 状态 | 进度 |
 |-------|------|------|
-| Phase 1: 基础框架 | 🚧 进行中 | 0% |
+| Phase 1: 基础框架 | ✅ 已完成 | 100% |
 | Phase 2: 认证模块 | ⏳ 待开始 | - |
 | Phase 3: 游戏和房间模块 | ⏳ 待开始 | - |
 | Phase 4: 聊天和玩家模块 | ⏳ 待开始 | - |
@@ -60,19 +60,26 @@ cli/
 
 ### Phase 1: 基础框架 ⭐ (当前阶段)
 
-- [ ] **1.1** 创建 CLI 项目结构
+- [x] **1.1** 创建 CLI 项目结构
   - [x] 创建目录结构
-  - [ ] 初始化 Python 项目（pyproject.toml）
-  - [ ] 安装依赖（typer, httpx, websockets）
-  - [ ] 创建基础目录结构（commands/, listeners/）
-- [ ] **1.2** 实现 API 客户端
-  - [ ] HTTP 客户端（封装所有 REST API）
-  - [ ] WebSocket 客户端（实时消息）
-  - [ ] 错误处理和重试机制
-- [ ] **1.3** 实现会话管理
-  - [ ] 登录状态持久化（~/.clawplaygame/config.json）
-  - [ ] 当前房间状态管理
-  - [ ] 用户信息管理
+  - [x] 初始化 Python 项目（pyproject.toml）
+  - [x] 创建基础目录结构（commands/, listeners/）
+- [x] **1.2** 实现 API 客户端
+  - [x] HTTP 客户端（封装所有 REST API）
+  - [x] WebSocket 客户端框架
+  - [x] 错误处理机制
+- [x] **1.3** 实现会话管理
+  - [x] 登录状态持久化（~/.clawplaygame/config.json）
+  - [x] 当前房间状态管理
+  - [x] 用户信息管理
+- [x] **1.4** 实现 CLI 入口和基础命令
+  - [x] CLI 主入口（Typer）
+  - [x] auth 命令（login, guest, logout, status）
+  - [x] games 命令（list, select, rooms）
+  - [x] rooms 命令（create, join, leave, info）
+  - [x] chat 命令（send, history）
+  - [x] player 命令（ready）
+  - [x] host 命令（kick, start, dismiss）
 
 ### Phase 2: 认证模块 🔐
 
@@ -198,10 +205,29 @@ clawplaygame host start
 
 ## 开发进度
 
-### 2026-03-26
+### 2026-03-26 - Phase 1 完成 🎉
 - ✅ 创建项目目录结构
 - ✅ 编写 TODO 计划和技术方案
-- ⏳ 初始化 Python 项目
+- ✅ 初始化 Python 项目（pyproject.toml）
+- ✅ 实现配置管理（config.py）
+- ✅ 实现会话管理（session.py）
+- ✅ 实现 API 客户端（client.py）
+  - 游戏 API（list, get, rooms）
+  - 房间 API（create, join, kick, transfer, update, delete, toggle_ready, start）
+  - 消息 API（send, get）
+  - WebSocket 框架
+- ✅ 实现 CLI 入口（cli.py）
+  - auth 命令组（login, guest, logout, status）
+  - games 命令组（list, select, rooms）
+  - rooms 命令组（create, join, leave, info）
+  - chat 命令组（send, history）
+  - player 命令组（ready）
+  - host 命令组（kick, start, dismiss）
+- ✅ 添加 Rich 终端美化
+
+### 2026-03-26 - 项目初始化
+- ✅ 创建项目目录结构
+- ✅ 编写 TODO 计划和技术方案
 
 ---
 
