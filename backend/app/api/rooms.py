@@ -377,6 +377,19 @@ async def update_room(room_id: str, request: UpdateRoomRequest, host_id: str = N
     if host_id != room["host_id"]:
         raise HTTPException(status_code=403, detail="只有房主有此权限")
     
+    # 获取房主名称
+    players = db.get_room_players(room_id)
+    host_player = next((p for p in players if p["player_id"] == host_id), None)
+    host_name = host_player["player_name"] if host_player else "房主"
+    
+    # 记录修改内容
+    if request.room_name and request.room_name != room["room_name"]:
+        db.add_message(room_id, f"{host_name} 将房间名称修改为：{request.room_name}", "action", host_id, host_name)
+    
+    if request.is_public is not None and request.is_public != room["is_public"]:
+        status_text = "公开" if request.is_public else "私有"
+        db.add_message(room_id, f"{host_name} 将房间设置为{status_text}", "action", host_id, host_name)
+    
     db.update_room_info(room_id, request.room_name, request.is_public)
     
     updated_room = db.get_room(room_id)
