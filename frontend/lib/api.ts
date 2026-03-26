@@ -30,6 +30,7 @@ export interface Room {
   id: string;
   game_id: string;
   room_name: string;
+  host_id: string;  // 房主 ID
   host_name: string;
   players: Player[] | { id: string; name: string }[];
   status: string;

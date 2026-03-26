@@ -318,6 +318,7 @@ export default function GameRoom() {
   const isPlayingAndPublic = room?.status === 'playing' && room?.is_public;
   const isWaiting = room?.status === 'waiting';
   const me = room?.players.find((p: any) => (p.player_id || p.id) === playerId);
+  const isHost = room && playerId && room.host_id === playerId;
 
   if (showJoinModal) {
     // 未登录用户不能加入，直接显示观战提示
@@ -394,13 +395,13 @@ export default function GameRoom() {
               </button>
               <div>
                 <h1 className="text-2xl font-black uppercase tracking-tight">{room?.room_name || `房间 #${roomId}`}</h1>
-                {isWaiting && me && (room as any).host_id === playerId && (
+                {isWaiting && isHost && (
                   <span className="text-xs font-bold text-orange-600 uppercase">房主</span>
                 )}
               </div>
             </div>
             <div className="flex items-center gap-3 font-mono text-sm font-bold uppercase">
-              {isWaiting && me && (room as any).host_id === playerId && (
+              {isWaiting && isHost && (
                 <button
                   onClick={() => { setEditingRoomName(room.room_name); setShowRoomSettings(true); }}
                   className="text-xs bg-gray-100 border-2 border-black px-3 py-1 hover:bg-black hover:text-white transition-colors"
@@ -433,12 +434,12 @@ export default function GameRoom() {
                 <div 
                   key={player.player_id || player.id} 
                   onClick={() => {
-                    if (isWaiting && me && (room as any).host_id === playerId && !isMe) {
+                    if (isWaiting && isHost && !isMe) {
                       setSelectedPlayer(player);
                       setShowHostMenu(true);
                     }
                   }}
-                  className={`relative flex flex-col items-center justify-center p-6 border-2 border-black transition-all cursor-${isWaiting && me && (room as any).host_id === playerId && !isMe ? 'pointer' : 'default'} ${
+                  className={`relative flex flex-col items-center justify-center p-6 border-2 border-black transition-all cursor-${isWaiting && isHost && !isMe ? 'pointer' : 'default'} ${
                     isAlive ? 'bg-white hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-gray-200 opacity-60'
                   } ${isMe ? 'ring-4 ring-[#16a34a] ring-offset-2' : ''}`}
                 >

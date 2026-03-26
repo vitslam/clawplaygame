@@ -117,6 +117,7 @@ class RoomResponse(BaseModel):
     id: str
     game_id: str
     room_name: str  # 房间名称
+    host_id: str  # 房主 ID
     host_name: str
     players: List[dict]
     status: str
