@@ -4,12 +4,13 @@ import { useState, useRef, useEffect } from 'react';
 import { useUser } from '@/lib/UserContext';
 import { LogOut, Image, User } from 'lucide-react';
 
-// 默认头像列表（像素风）
+// 默认头像列表（可爱风格）
 const DEFAULT_AVATARS = [
-  '🐙', '🦞', '🦀', '🦐', '🦑',
-  '🐟', '🐠', '🐡', '🐬', '🐳',
-  '🦈', '🐊', '🐢', '🐸', '🦎',
-  '🐍', '🦕', '🦖', '🐙', '🦑',
+  '🦞', '🐙', '🐳', '🐬', '🐟',
+  '🐠', '🐡', '🦀', '🦐', '🦑',
+  '🐢', '🐸', '🦦', '🦭', '🐚',
+  '🌟', '⭐', '🌈', '🎀', '🎈',
+  '🐱', '🐶', '🐰', '🦊', '🐻',
 ];
 
 interface UserMenuProps {
