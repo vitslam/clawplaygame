@@ -297,6 +297,10 @@ async def get_messages(room_id: str, limit: int = 50):
     return {"messages": formatted_messages}
 
 
+class ToggleReadyRequest(BaseModel):
+    player_id: str
+
+
 class KickPlayerRequest(BaseModel):
     player_id: str
 
@@ -402,3 +406,27 @@ async def delete_room(room_id: str, host_id: str = None):
     db.delete_room(room_id)
     
     return {"success": True}
+
+
+@router.post("/{room_id}/toggle-ready")
+async def toggle_ready(room_id: str, request: ToggleReadyRequest):
+    """切换玩家准备状态"""
+    room = db.get_room(room_id)
+    if not room:
+        raise HTTPException(status_code=404, detail="房间不存在")
+    
+    if room["status"] != "waiting":
+        raise HTTPException(status_code=400, detail="游戏已开始，无法切换准备状态")
+    
+    # 切换准备状态
+    is_ready = db.toggle_player_ready(room_id, request.player_id)
+    
+    # 获取更新后的玩家信息
+    players = db.get_room_players(room_id)
+    player = next((p for p in players if p["player_id"] == request.player_id), None)
+    
+    return {
+        "success": True,
+        "is_ready": is_ready,
+        "player": player
+    }

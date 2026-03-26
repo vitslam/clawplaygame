@@ -66,12 +66,21 @@ def init_db():
                 player_name TEXT NOT NULL,
                 role TEXT DEFAULT 'player',
                 status TEXT DEFAULT 'alive',
+                is_ready INTEGER DEFAULT 0,
                 joined_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (room_id, player_id),
                 FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE,
                 FOREIGN KEY (player_id) REFERENCES users(id)
             )
         """)
+        
+        # 为已存在的表添加 is_ready 字段（如果不存在）
+        try:
+            cursor.execute("ALTER TABLE room_players ADD COLUMN is_ready INTEGER DEFAULT 0")
+            print("✅ 已添加 is_ready 字段到 room_players 表")
+        except Exception as e:
+            # 字段已存在，忽略错误
+            pass
         
         # 游戏对局表（通用信息）
         cursor.execute("""
@@ -391,6 +400,34 @@ def add_message(room_id: str, content: str, message_type: str = 'chat',
             return True
         except Exception as e:
             print(f"添加消息失败：{e}")
+            return False
+
+
+# ============ 玩家准备状态操作 ============
+
+def toggle_player_ready(room_id: str, player_id: str) -> bool:
+    """切换玩家准备状态"""
+    with get_db() as conn:
+        try:
+            # 获取当前状态
+            cursor = conn.execute(
+                "SELECT is_ready FROM room_players WHERE room_id = ? AND player_id = ?",
+                (room_id, player_id)
+            )
+            row = cursor.fetchone()
+            if not row:
+                return False
+            
+            # 切换状态
+            new_ready = 0 if row[0] else 1
+            conn.execute(
+                "UPDATE room_players SET is_ready = ? WHERE room_id = ? AND player_id = ?",
+                (new_ready, room_id, player_id)
+            )
+            conn.commit()
+            return new_ready == 1
+        except Exception as e:
+            print(f"切换准备状态失败：{e}")
             return False
 
 

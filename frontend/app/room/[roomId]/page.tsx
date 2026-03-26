@@ -94,10 +94,12 @@ export default function GameRoom() {
       
       if (user) {
         // 已登录用户：检查是否已在房间
-        const playerInRoom = data.players.find((p: any) => (p.id || p.player_id) === user.id);
+        const playerInRoom: any = data.players.find((p: any) => (p.id || p.player_id) === user.id);
         if (playerInRoom) {
           // 使用实际的 player_id（可能是 player_id 或 id）
-          setPlayerId((playerInRoom as any).player_id || (playerInRoom as any).id || user.id);
+          setPlayerId(playerInRoom.player_id || playerInRoom.id || user.id);
+          // 读取准备状态
+          setMyReady(!!playerInRoom.is_ready);
         } else if (data.status === 'waiting') {
           // 等待中的房间，已登录用户直接加入
           await handleAutoJoin(user.nickname);
@@ -607,8 +609,15 @@ export default function GameRoom() {
               ) : (
                 <button
                   onClick={async () => {
-                    // TODO: 调用 API 切换准备状态
-                    setMyReady(!myReady);
+                    try {
+                      const { toggleReady } = await import('@/lib/api');
+                      const result = await toggleReady(roomId, playerId);
+                      setMyReady(result.is_ready);
+                      // 重新加载房间以同步所有玩家状态
+                      loadRoom();
+                    } catch (err) {
+                      alert('切换准备状态失败：' + (err as Error).message);
+                    }
                   }}
                   className={`w-full border-2 border-black px-4 py-4 font-bold uppercase transition-all flex items-center justify-center gap-2 text-lg ${
                     myReady 

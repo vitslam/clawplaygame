@@ -179,6 +179,16 @@ export async function updateRoom(roomId: string, hostId: string, roomName?: stri
   return res.json();
 }
 
+export async function toggleReady(roomId: string, playerId: string): Promise<{ success: boolean; is_ready: boolean }> {
+  const res = await fetch(`${API_BASE_URL}/api/rooms/${roomId}/toggle-ready`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ player_id: playerId }),
+  });
+  if (!res.ok) throw new Error('切换准备状态失败');
+  return res.json();
+}
+
 // WebSocket 连接
 export function createWebSocket(roomId: string): WebSocket {
   const wsUrl = `ws://localhost:8000/ws/rooms/${roomId}`;
