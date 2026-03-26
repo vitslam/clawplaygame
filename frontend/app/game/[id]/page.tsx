@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
-import { Users, Lock, Unlock, Loader2, Plus } from 'lucide-react';
+import { Users, Lock, Unlock, Loader2, Plus, Search, LogIn } from 'lucide-react';
 import { getGame, listRooms, type Game } from '@/lib/api';
+import { useUser } from '@/lib/UserContext';
 
 interface Room {
   id: string;
@@ -28,14 +29,16 @@ export default function RoomList() {
   const params = useParams();
   const router = useRouter();
   const gameId = params.id as string;
+  const { user } = useUser();
   
   const [game, setGame] = useState<Game | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
-  const [playerName, setPlayerName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   
   // 创建房间表单状态
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [roomName, setRoomName] = useState('');
   const [maxPlayers, setMaxPlayers] = useState(10);
   const [isPublic, setIsPublic] = useState(true);
@@ -53,9 +56,21 @@ export default function RoomList() {
       .finally(() => setLoading(false));
   }, [gameId]);
 
+  // 过滤后的房间列表（根据搜索关键字）
+  const filteredRooms = useMemo(() => {
+    if (!searchQuery.trim()) return rooms;
+    
+    const query = searchQuery.toLowerCase();
+    return rooms.filter(room => 
+      room.room_name.toLowerCase().includes(query) ||
+      room.id.toLowerCase().includes(query) ||
+      room.host_name.toLowerCase().includes(query)
+    );
+  }, [rooms, searchQuery]);
+
   const handleCreateRoom = async () => {
-    if (!playerName.trim()) {
-      alert('请输入你的昵称');
+    if (!user) {
+      setShowLoginModal(true);
       return;
     }
     if (!roomName.trim()) {
@@ -65,7 +80,7 @@ export default function RoomList() {
     
     try {
       const { createRoom } = await import('@/lib/api');
-      const room = await createRoom(gameId, playerName, roomName, maxPlayers, isPublic);
+      const room = await createRoom(gameId, user.nickname, roomName, maxPlayers, isPublic);
       router.push(`/room/${room.id}`);
     } catch (err) {
       alert('创建房间失败：' + (err as Error).message);
@@ -73,7 +88,11 @@ export default function RoomList() {
   };
 
   const openCreateModal = () => {
-    setRoomName(playerName ? `${playerName} 的房间` : '新房间');
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+    setRoomName(`${user.nickname} 的房间`);
     setMaxPlayers(10);
     setIsPublic(true);
     setShowCreateModal(true);
@@ -106,13 +125,16 @@ export default function RoomList() {
           </div>
           
           <div className="flex gap-4">
-            <input
-              type="text"
-              placeholder="你的昵称"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              className="border-2 border-black px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="relative flex-1 md:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="搜索房间..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full border-2 border-black pl-10 pr-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
             <button 
               onClick={openCreateModal}
               className="bg-black text-white px-6 py-3 border-2 border-black font-bold uppercase hover:bg-white hover:text-black hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all whitespace-nowrap flex items-center gap-2"
@@ -122,15 +144,19 @@ export default function RoomList() {
           </div>
         </div>
 
-        {rooms.length === 0 ? (
+        {filteredRooms.length === 0 ? (
           <div className="text-center py-20">
-            <Users className="w-24 h-24 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-2xl font-bold text-gray-400 mb-2">暂无房间</h3>
-            <p className="text-gray-500 mb-6">创建第一个房间开始游戏吧！</p>
+            <Search className="w-24 h-24 mx-auto text-gray-300 mb-4" />
+            <h3 className="text-2xl font-bold text-gray-400 mb-2">
+              {searchQuery ? `没有找到匹配"${searchQuery}"的房间` : '暂无房间'}
+            </h3>
+            <p className="text-gray-500 mb-6">
+              {searchQuery ? '试试其他关键词' : '创建第一个房间开始游戏吧！'}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {rooms.map((room) => (
+            {filteredRooms.map((room) => (
               <Link 
                 href={`/room/${room.id}`} 
                 key={room.id} 
@@ -170,6 +196,31 @@ export default function RoomList() {
         )}
       </main>
 
+      {/* 未登录提示弹窗 */}
+      {showLoginModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white border-2 border-black p-8 max-w-sm w-full shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-center">
+            <LogIn className="w-16 h-16 mx-auto mb-4 text-blue-600" />
+            <h3 className="text-2xl font-black uppercase mb-4">需要登录</h3>
+            <p className="text-gray-600 mb-6">创建房间需要先登录账号。</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLoginModal(false)}
+                className="flex-1 bg-gray-200 text-black px-6 py-3 border-2 border-black font-bold uppercase hover:bg-gray-300"
+              >
+                取消
+              </button>
+              <Link
+                href="/"
+                className="flex-1 bg-black text-white px-6 py-3 border-2 border-black font-bold uppercase hover:bg-white hover:text-black inline-block text-center"
+              >
+                去登录
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* 创建房间模态框 */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
