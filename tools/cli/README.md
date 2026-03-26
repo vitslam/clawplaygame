@@ -4,15 +4,15 @@
 
 ## 项目状态
 
-**当前阶段**: Phase 2 - 认证模块 ✅
+**当前阶段**: Phase 3 - 游戏和房间模块 ✅
 
 | Phase | 状态 | 进度 |
 |-------|------|------|
 | Phase 1: 基础框架 | ✅ 已完成 | 100% |
 | Phase 2: 认证模块 | ✅ 已完成 | 100% |
-| Phase 3: 游戏和房间模块 | ⏳ 待开始 | - |
-| Phase 4: 聊天和玩家模块 | ⏳ 待开始 | - |
-| Phase 5: 房主模块 | ⏳ 待开始 | - |
+| Phase 3: 游戏和房间模块 | ✅ 已完成 | 100% |
+| Phase 4: 聊天和玩家模块 | ✅ 已完成 | 100% |
+| Phase 5: 房主模块 | ✅ 已完成 | 100% |
 | Phase 6: 高级功能 | ⏳ 待开始 | - |
 | Phase 7: 测试和文档 | ⏳ 待开始 | - |
 
@@ -109,38 +109,37 @@ cli/
 
 ### Phase 3: 游戏和房间模块 🎮
 
-- [ ] **3.1** 游戏命令
-  - [ ] `clawplaygame games list` - 列出所有游戏
-  - [ ] `clawplaygame games select <game_id>` - 选择游戏
-  - [ ] `clawplaygame games rooms` - 列出当前游戏的房间
-- [ ] **3.2** 房间命令
-  - [ ] `clawplaygame rooms create <name> [--max=10] [--public]` - 创建房间
-  - [ ] `clawplaygame rooms join <room_id>` - 加入房间
-  - [ ] `clawplaygame rooms leave` - 离开房间
-  - [ ] `clawplaygame rooms info` - 查看房间信息
-  - [ ] `clawplaygame rooms list` - 列出所有房间
+- [x] **3.1** 游戏命令
+  - [x] `clawplaygame games list` - 列出所有游戏（表格显示）
+  - [x] `clawplaygame games select <game_id>` - 选择游戏
+  - [x] `clawplaygame games rooms [game_id]` - 列出房间
+  - [x] `clawplaygame games info` - 查看游戏详情
+- [x] **3.2** 房间命令
+  - [x] `clawplaygame rooms create <name>` - 创建房间
+  - [x] `clawplaygame rooms join <room_id>` - 加入房间
+  - [x] `clawplaygame rooms leave` - 离开房间
+  - [x] `clawplaygame rooms info` - 查看房间信息（玩家列表）
+  - [x] `clawplaygame rooms list` - 列出所有房间统计
 
 ### Phase 4: 聊天和玩家模块 💬
 
-- [ ] **4.1** 聊天命令
-  - [ ] `clawplaygame chat send <message>` - 发送消息
-  - [ ] `clawplaygame chat history [--limit=50]` - 查看历史消息
-  - [ ] `clawplaygame chat listen` - 实时监听消息（长连接）
-- [ ] **4.2** 玩家命令
-  - [ ] `clawplaygame player ready` - 准备
-  - [ ] `clawplaygame player unready` - 取消准备
-  - [ ] `clawplaygame player status` - 查看状态
-  - [ ] `clawplaygame player avatar <emoji>` - 设置头像
+- [x] **4.1** 聊天命令
+  - [x] `clawplaygame chat send <message>` - 发送消息
+  - [x] `clawplaygame chat history [--limit=50]` - 查看历史消息
+- [x] **4.2** 玩家命令
+  - [x] `clawplaygame player ready` - 准备
+  - [x] `clawplaygame player unready` - 取消准备
+  - [x] `clawplaygame player status` - 查看状态
 
 ### Phase 5: 房主模块 👑
 
-- [ ] **5.1** 房主命令
-  - [ ] `clawplaygame host kick <player_id>` - 踢出玩家
-  - [ ] `clawplaygame host transfer <player_id>` - 移交房主
-  - [ ] `clawplaygame host dismiss` - 解散房间
-  - [ ] `clawplaygame host set-name <name>` - 修改房间名
-  - [ ] `clawplaygame host set-public <true|false>` - 设置公开
-  - [ ] `clawplaygame host start` - 开始游戏
+- [x] **5.1** 房主命令
+  - [x] `clawplaygame host kick <player_id>` - 踢出玩家
+  - [x] `clawplaygame host transfer <player_id>` - 移交房主
+  - [x] `clawplaygame host dismiss` - 解散房间（带确认）
+  - [x] `clawplaygame host set-name <name>` - 修改房间名
+  - [x] `clawplaygame host set-public <true|false>` - 设置公开
+  - [x] `clawplaygame host start` - 开始游戏
 
 ### Phase 6: 高级功能 🚀
 
@@ -218,6 +217,37 @@ clawplaygame host start
 ---
 
 ## 开发进度
+
+### 2026-03-26 - Phase 3-5 完成 🎉
+- ✅ 游戏命令模块（commands/games.py）
+  - list - 游戏列表（表格显示，含活跃玩家数）
+  - select - 选择游戏（保存到配置）
+  - rooms - 房间列表（表格显示，状态/人数/公开标记）
+  - info - 游戏详情
+- ✅ 房间命令模块（commands/rooms.py）
+  - create - 创建房间（带参数验证）
+  - join - 加入房间（显示玩家列表）
+  - leave - 离开房间
+  - info - 房间信息（玩家准备状态）
+  - list - 所有房间统计
+- ✅ 聊天命令模块（commands/chat.py）
+  - send - 发送消息
+  - history - 历史消息（类型区分显示）
+- ✅ 玩家命令模块（commands/player.py）
+  - ready - 准备
+  - unready - 取消准备
+  - status - 玩家状态
+- ✅ 房主命令模块（commands/host.py）
+  - kick - 踢出玩家
+  - transfer - 移交房主
+  - start - 开始游戏
+  - dismiss - 解散房间（带确认）
+  - set-name - 修改房间名
+  - set-public - 设置公开
+- ✅ CLI 主入口整合
+  - 注册所有命令模块
+  - 添加 quick-join 快捷命令
+  - 添加 help 命令
 
 ### 2026-03-26 - Phase 2 完成 🎉
 - ✅ 实现认证命令模块（commands/auth.py）
