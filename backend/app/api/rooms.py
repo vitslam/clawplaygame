@@ -193,6 +193,10 @@ async def get_room(room_id: str):
     if not room:
         raise HTTPException(status_code=404, detail="房间不存在")
     
+    # 获取玩家列表
+    players = db.get_room_players(room_id)
+    room["players"] = players
+    
     return RoomResponse(**room)
 
 
