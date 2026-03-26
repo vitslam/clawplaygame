@@ -3,11 +3,13 @@
 """
 import typer
 import asyncio
+import asyncio
 from rich.console import Console
 from rich.panel import Panel
 
 from config import config
 from session import session
+import asyncio
 from client import api_client
 
 app = typer.Typer()
@@ -31,7 +33,7 @@ def ready():
         console.print(f"[green]✓ {status}[/green]")
         
         # 刷新房间信息
-        session.room = asyncio.get_event_loop().run_until_complete(api_client.get_room(session.room_id))
+        session.room = asyncio.get_event_loop().run_until_complete(asyncio.get_event_loop().run_until_complete(api_client.get_room(session.room_id)))
     except Exception as e:
         console.print(f"[red]✗ 操作失败：{e}[/red]")
 
@@ -55,7 +57,7 @@ def unready():
             console.print("[green]✓ 已取消准备[/green]")
         
         # 刷新房间信息
-        session.room = asyncio.get_event_loop().run_until_complete(api_client.get_room(session.room_id))
+        session.room = asyncio.get_event_loop().run_until_complete(asyncio.get_event_loop().run_until_complete(api_client.get_room(session.room_id)))
     except Exception as e:
         console.print(f"[red]✗ 操作失败：{e}[/red]")
 

@@ -3,11 +3,13 @@
 """
 import typer
 import asyncio
+import asyncio
 from rich.console import Console
 from rich.panel import Panel
 
 from config import config
 from session import session
+import asyncio
 from client import api_client
 
 app = typer.Typer()
@@ -34,7 +36,7 @@ def kick(player_id: str):
         console.print(f"[green]✓ 玩家已踢出[/green]")
         
         # 刷新房间信息
-        session.room = asyncio.get_event_loop().run_until_complete(api_client.get_room(session.room_id))
+        session.room = asyncio.get_event_loop().run_until_complete(asyncio.get_event_loop().run_until_complete(api_client.get_room(session.room_id)))
     except Exception as e:
         console.print(f"[red]✗ 踢出失败：{e}[/red]")
 
@@ -59,7 +61,7 @@ def transfer(player_id: str):
         console.print(f"[green]✓ 房主已移交给玩家 {player_id}[/green]")
         
         # 刷新房间信息
-        session.room = asyncio.get_event_loop().run_until_complete(api_client.get_room(session.room_id))
+        session.room = asyncio.get_event_loop().run_until_complete(asyncio.get_event_loop().run_until_complete(api_client.get_room(session.room_id)))
     except Exception as e:
         console.print(f"[red]✗ 移交失败：{e}[/red]")
 
@@ -76,11 +78,11 @@ def start():
         return
     
     try:
-        asyncio.get_event_loop().run_until_complete(api_client.start_game(session.room_id))
+        asyncio.get_event_loop().run_until_complete(asyncio.get_event_loop().run_until_complete(api_client.start_game(session.room_id)))
         console.print("[green]✓ 游戏已开始[/green]")
         
         # 刷新房间信息
-        session.room = asyncio.get_event_loop().run_until_complete(api_client.get_room(session.room_id))
+        session.room = asyncio.get_event_loop().run_until_complete(asyncio.get_event_loop().run_until_complete(api_client.get_room(session.room_id)))
     except Exception as e:
         console.print(f"[red]✗ 开始游戏失败：{e}[/red]")
 
@@ -135,7 +137,7 @@ def set_room_name(name: str):
         console.print(f"[green]✓ 房间名称已修改为：{name}[/green]")
         
         # 刷新房间信息
-        session.room = asyncio.get_event_loop().run_until_complete(api_client.get_room(session.room_id))
+        session.room = asyncio.get_event_loop().run_until_complete(asyncio.get_event_loop().run_until_complete(api_client.get_room(session.room_id)))
     except Exception as e:
         console.print(f"[red]✗ 修改失败：{e}[/red]")
 
@@ -161,6 +163,6 @@ def set_room_public(is_public: bool):
         console.print(f"[green]✓ 房间已设置为{status}[/green]")
         
         # 刷新房间信息
-        session.room = asyncio.get_event_loop().run_until_complete(api_client.get_room(session.room_id))
+        session.room = asyncio.get_event_loop().run_until_complete(asyncio.get_event_loop().run_until_complete(api_client.get_room(session.room_id)))
     except Exception as e:
         console.print(f"[red]✗ 设置失败：{e}[/red]")

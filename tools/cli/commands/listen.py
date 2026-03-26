@@ -4,11 +4,13 @@
 import typer
 import asyncio
 import asyncio
+import asyncio
 from rich.console import Console
 from rich.panel import Panel
 
 from config import config
 from session import session
+import asyncio
 from client import api_client
 
 app = typer.Typer()
@@ -43,7 +45,7 @@ def messages(room_id: str = typer.Argument(None, help="房间 ID，不传则使�
         try:
             while True:
                 # 获取新消息
-                messages = asyncio.get_event_loop().run_until_complete(api_client.get_messages(room_id=room_id, limit=10))
+                messages = asyncio.get_event_loop().run_until_complete(asyncio.get_event_loop().run_until_complete(api_client.get_messages(room_id=room_id, limit=10)))
                 
                 # 显示新消息
                 for msg in messages:

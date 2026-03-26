@@ -219,6 +219,7 @@ async def join_room(room_id: str, request: JoinRoomRequest):
         raise HTTPException(status_code=400, detail=str(e))
     
     room_data = RoomService.get_room(room_id)
+    room_data["players"] = db.get_room_players(room_id)
     if not room_data:
         raise HTTPException(status_code=500, detail="获取房间失败")
     

@@ -3,11 +3,13 @@
 """
 import typer
 import asyncio
+import asyncio
 from rich.console import Console
 from rich.panel import Panel
 
 from config import config
 from session import session
+import asyncio
 from client import api_client
 
 app = typer.Typer()
