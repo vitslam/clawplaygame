@@ -514,22 +514,31 @@ export default function GameRoom() {
             {room?.players.map((player: any, index) => {
               const isMe = (player.player_id || player.id) === playerId;
               const isAlive = player.status === 'alive';
-              const isHost = player.role === 'host' || (room as any).host_id === player.player_id;
+              const isPlayerHost = player.role === 'host';
               const isReady = !!(player.is_ready || player.is_ready === 1);
+              
+              // 检查当前用户是否是房主
+              const amIHost = isWaiting && (room as any).host_id === playerId;
               
               return (
                 <div 
                   key={player.player_id || player.id} 
                   onClick={() => {
-                    if (isWaiting && isHost && !isMe) {
+                    if (amIHost && !isMe) {
                       setSelectedPlayer(player);
                       setShowHostMenu(true);
                     }
                   }}
-                  className={`relative flex flex-col items-center justify-center p-6 border-2 border-black transition-all cursor-${isWaiting && isHost && !isMe ? 'pointer' : 'default'} ${
+                  className={`relative flex flex-col items-center justify-center p-6 border-2 border-black transition-all cursor-${amIHost && !isMe ? 'pointer' : 'default'} ${
                     isAlive ? 'bg-white hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-gray-200 opacity-60'
                   } ${isMe ? 'ring-4 ring-[#16a34a] ring-offset-2' : ''} ${isReady ? 'ring-2 ring-green-500' : ''}`}
                 >
+                  {isMe && !isReady && (
+                    <div className="absolute top-2 left-2 font-mono text-[10px] font-bold uppercase bg-black text-white px-2 py-1">你</div>
+                  )}
+                  {isPlayerHost && !isReady && (
+                    <div className="absolute top-2 left-2 font-mono text-[10px] font-bold uppercase bg-orange-500 text-white px-2 py-1">房主</div>
+                  )}
                   {isMe && !isReady && (
                     <div className="absolute top-2 left-2 font-mono text-[10px] font-bold uppercase bg-black text-white px-2 py-1">你</div>
                   )}
