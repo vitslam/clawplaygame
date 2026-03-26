@@ -29,6 +29,7 @@ export default function GameRoom() {
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null); // 选中的玩家
   const [isEditingName, setIsEditingName] = useState(false); // 是否正在编辑房间名
   const [editingRoomName, setEditingRoomName] = useState(''); // 编辑中的房间名
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // 解散房间确认弹窗
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -380,7 +381,7 @@ export default function GameRoom() {
                 ← 离开房间
               </button>
               {isWaiting && isHost ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-4">
                   {isEditingName ? (
                     <input
                       type="text"
@@ -414,6 +415,8 @@ export default function GameRoom() {
                       {room?.room_name || `房间 #${roomId}`}
                     </h1>
                   )}
+                  
+                  {/* 公开/私有 拨动开关 */}
                   <button
                     onClick={async () => {
                       const newIsPublic = !room.is_public;
@@ -425,9 +428,27 @@ export default function GameRoom() {
                         alert('修改房间设置失败');
                       }
                     }}
-                    className="text-xs bg-gray-100 border-2 border-black px-3 py-1 hover:bg-black hover:text-white transition-colors"
+                    className={`relative w-20 h-8 border-2 border-black font-bold text-xs uppercase transition-colors ${
+                      room?.is_public ? 'bg-[#16a34a] text-white' : 'bg-gray-400 text-white'
+                    }`}
                   >
-                    {room?.is_public ? '公开' : '私有'}
+                    <div className={`absolute top-0.5 left-0.5 w-7 h-6 bg-white border-2 border-black transition-transform ${
+                      room?.is_public ? 'translate-x-11' : 'translate-x-0'
+                    }`} />
+                    <span className={`absolute left-2 top-1/2 -translate-y-1/2 ${room?.is_public ? 'opacity-100' : 'opacity-50'}`}>
+                      公开
+                    </span>
+                    <span className={`absolute right-2 top-1/2 -translate-y-1/2 ${room?.is_public ? 'opacity-50' : 'opacity-100'}`}>
+                      私有
+                    </span>
+                  </button>
+                  
+                  {/* 解散房间按钮 */}
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="bg-[#dc2626] text-white px-4 py-2 border-2 border-[#991b1b] font-bold uppercase hover:bg-[#991b1b] hover:text-white transition-colors"
+                  >
+                    解散房间
                   </button>
                 </div>
               ) : (
@@ -682,15 +703,42 @@ export default function GameRoom() {
         </div>
       )}
       
-      {/* 解散房间按钮（房主专用） */}
-      {isWaiting && isHost && (
-        <div className="fixed bottom-4 right-4">
-          <button
-            onClick={handleDeleteRoom}
-            className="bg-red-600 text-white px-4 py-2 border-2 border-red-700 font-bold uppercase hover:bg-red-700 transition-colors shadow-lg"
-          >
-            解散房间
-          </button>
+      {/* 解散房间确认弹窗 */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white border-2 border-black p-8 max-w-md w-full shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-[#dc2626] border-2 border-black mx-auto mb-4 flex items-center justify-center">
+                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-black uppercase mb-2">解散房间</h3>
+              <p className="text-gray-600 font-mono text-sm">
+                确定要解散房间 <span className="font-bold text-black">"{room?.room_name}"</span> 吗？
+              </p>
+              <p className="text-[#dc2626] font-bold text-xs mt-2 uppercase">
+                ⚠️ 此操作不可恢复，所有玩家将被移出房间
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 bg-gray-200 text-black px-6 py-3 border-2 border-black font-bold uppercase hover:bg-gray-300 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  handleDeleteRoom();
+                }}
+                className="flex-1 bg-[#dc2626] text-white px-6 py-3 border-2 border-[#991b1b] font-bold uppercase hover:bg-[#991b1b] transition-colors"
+              >
+                确认解散
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
