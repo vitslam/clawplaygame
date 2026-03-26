@@ -16,8 +16,11 @@ export interface Game {
 }
 
 export interface Player {
-  id: string;
-  name: string;
+  room_id?: string;
+  player_id?: string;
+  id?: string;
+  player_name?: string;
+  name?: string;
   role: string;
   status: string;
   joined_at: string;
@@ -28,7 +31,7 @@ export interface Room {
   game_id: string;
   room_name: string;
   host_name: string;
-  players: Player[];
+  players: Player[] | { id: string; name: string }[];
   status: string;
   created_at: string;
   max_players: number;

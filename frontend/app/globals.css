@@ -3,11 +3,19 @@
 @theme {
   --font-sans: var(--font-inter);
   --font-mono: var(--font-mono);
+  --color-electro-blue: #00f2ff;
+  --color-neon-orange: #ff4500;
+  --color-deep-bg: #01080f;
+  --color-deep-surface: #0a111a;
 }
 
 :root {
   --background: #f4f4f4;
   --foreground: #000000;
+  --deep-bg: #01080f;
+  --deep-surface: #0a111a;
+  --electro-blue: #00f2ff;
+  --neon-orange: #ff4500;
 }
 
 body {

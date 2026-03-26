@@ -12,7 +12,7 @@ interface Room {
   game_id: string;
   room_name: string;
   host_name: string;
-  players: Array<{ id: string; name: string }>;
+  players: any[];
   status: string;
   max_players: number;
 }

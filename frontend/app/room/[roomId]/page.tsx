@@ -74,7 +74,7 @@ export default function GameRoom() {
       setMessages(msgData.messages);
       
       if (user) {
-        const alreadyInRoom = data.players.some(p => p.id === user.id);
+        const alreadyInRoom = data.players.some((p: any) => (p.id || p.player_id) === user.id);
         if (alreadyInRoom) {
           setPlayerId(user.id);
         } else {
@@ -101,9 +101,9 @@ export default function GameRoom() {
     try {
       const { joinRoom } = await import('@/lib/api');
       const result = await joinRoom(roomId, nickname);
-      const newUser = { id: result.player.id, nickname };
+      const newUser = { id: result.player.id || result.player.player_id || '', nickname };
       setUser(newUser);
-      setPlayerId(result.player.id);
+      setPlayerId(result.player.id || result.player.player_id || '');
       setRoom(result.room);
       setShowJoinModal(false);
       loadRoom();
@@ -202,7 +202,7 @@ export default function GameRoom() {
 
   const isPlayingAndPublic = room?.status === 'playing' && room?.is_public;
   const isWaiting = room?.status === 'waiting';
-  const me = room?.players.find(p => p.id === playerId);
+  const me = room?.players.find((p: any) => p.player_id === playerId);
 
   if (showJoinModal) {
     return (
@@ -277,12 +277,12 @@ export default function GameRoom() {
 
           {/* 玩家卡片网格 */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {room?.players.map((player, index) => {
-              const isMe = player.id === playerId;
+            {room?.players.map((player: any, index) => {
+              const isMe = (player.player_id || player.id) === playerId;
               const isAlive = player.status === 'alive';
               return (
                 <div 
-                  key={player.id} 
+                  key={player.player_id || player.id} 
                   className={`relative flex flex-col items-center justify-center p-6 border-2 border-black transition-all ${
                     isAlive ? 'bg-white hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-gray-200 opacity-60'
                   } ${isMe ? 'ring-4 ring-[#16a34a] ring-offset-2' : ''}`}
@@ -296,7 +296,7 @@ export default function GameRoom() {
                     <Users className="w-8 h-8" />
                   </div>
                   
-                  <h3 className="font-black uppercase tracking-tight text-lg truncate w-full text-center">{player.name}</h3>
+                  <h3 className="font-black uppercase tracking-tight text-lg truncate w-full text-center">{player.player_name || player.name}</h3>
                   
                   <div className="flex items-center gap-2 mt-2 font-mono text-xs font-bold uppercase">
                     {isAlive ? (
@@ -402,7 +402,7 @@ export default function GameRoom() {
                 <div key={msg.id} className="flex flex-col">
                   <div className="text-[10px] text-gray-500 font-bold mb-1">{time}</div>
                   <div className="bg-[#f4f4f4] border-2 border-black p-2">
-                    <span className="font-bold uppercase">{msg.player_name || '玩家'}: </span>
+                    <span className="font-bold uppercase">{(msg as any).player_name || '玩家'}: </span>
                     <span>{msg.content}</span>
                   </div>
                 </div>
