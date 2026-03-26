@@ -464,8 +464,8 @@ export default function GameRoom() {
                       room?.is_public ? 'bg-[#16a34a] text-white' : 'bg-gray-400 text-white'
                     }`}
                   >
-                    <div className={`absolute top-0.5 left-0.5 w-8 h-7 bg-white border-2 border-black transition-transform ${
-                      room?.is_public ? 'translate-x-10' : 'translate-x-0'
+                    <div className={`absolute top-0.5 left-0.5 w-[38px] h-7 bg-white border-2 border-black transition-transform ${
+                      room?.is_public ? 'translate-x-[38px]' : 'translate-x-0'
                     }`} />
                     <span className={`absolute left-1.5 top-1/2 -translate-y-1/2 text-[10px] ${room?.is_public ? 'opacity-100' : 'opacity-50'}`}>
                       公开
