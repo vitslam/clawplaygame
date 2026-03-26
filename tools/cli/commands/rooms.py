@@ -2,13 +2,14 @@
 房间命令模块 - 创建、加入、离开、查看房间
 """
 import typer
+import asyncio
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 
-from ..config import config
-from ..session import session
-from ..client import api_client
+from config import config
+from session import session
+from client import api_client
 
 app = typer.Typer()
 console = Console()
@@ -207,7 +208,7 @@ def info():
 def list_all():
     """列出所有房间（所有游戏）"""
     try:
-        games_list = api_client.list_games()
+        games_list = asyncio.get_event_loop().run_until_complete(api_client.list_games())
         
         if not games_list:
             console.print("[yellow]暂无游戏[/yellow]")
@@ -220,7 +221,7 @@ def list_all():
             if game["status"] != "active":
                 continue
             
-            rooms = api_client.list_rooms(game["id"])
+            rooms = asyncio.get_event_loop().run_until_complete(api_client.list_rooms(game["id"]))
             if rooms:
                 total_rooms += len(rooms)
                 for room in rooms:

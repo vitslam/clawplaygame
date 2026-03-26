@@ -2,12 +2,13 @@
 聊天命令模块 - 发送消息、查看历史
 """
 import typer
+import asyncio
 from rich.console import Console
 from rich.panel import Panel
 
-from ..config import config
-from ..session import session
-from ..client import api_client
+from config import config
+from session import session
+from client import api_client
 
 app = typer.Typer()
 console = Console()

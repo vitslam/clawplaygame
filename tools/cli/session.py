@@ -2,7 +2,7 @@
 会话管理 - 管理用户登录状态和房间状态
 """
 from typing import Optional, Dict
-from .config import config
+from config import config
 
 
 class Session:

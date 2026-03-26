@@ -5,7 +5,7 @@ import httpx
 import asyncio
 import websockets
 from typing import Optional, Dict, List, Callable, Any
-from .config import config
+from config import config
 
 
 class APIClient:

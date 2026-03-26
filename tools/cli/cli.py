@@ -6,17 +6,17 @@ import asyncio
 from rich.console import Console
 from rich.panel import Panel
 
-from .config import config
-from .session import session
-from .client import api_client
-from .commands.auth import app as auth_app
-from .commands.games import app as games_app
-from .commands.rooms import app as rooms_app
-from .commands.chat import app as chat_app
-from .commands.player import app as player_app
-from .commands.host import app as host_app
-from .commands.shell import app as shell_app
-from .commands.listen import app as listen_app
+from config import config
+from session import session
+from client import api_client
+from commands.auth import app as auth_app
+from commands.games import app as games_app
+from commands.rooms import app as rooms_app
+from commands.chat import app as chat_app
+from commands.player import app as player_app
+from commands.host import app as host_app
+from commands.shell import app as shell_app
+from commands.listen import app as listen_app
 
 app = typer.Typer(
     name="clawplaygame",

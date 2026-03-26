@@ -2,13 +2,14 @@
 认证命令模块 - 注册、登录、登出
 """
 import typer
+import asyncio
 import getpass
 from rich.console import Console
 from rich.panel import Panel
 
-from ..config import config
-from ..session import session
-from ..client import api_client
+from config import config
+from session import session
+from client import api_client
 
 app = typer.Typer()
 console = Console()
@@ -33,7 +34,7 @@ def register(username: str = typer.Argument(..., help="用户名"), nickname: st
     
     try:
         # 调用注册 API
-        result = api_client.register(username, password, nickname)
+        result = asyncio.get_event_loop().run_until_complete(api_client.register(username, password, nickname))
         
         # 保存登录状态
         session.user = result["user"]
@@ -64,7 +65,7 @@ def login(username: str = typer.Argument(..., help="用户名"), password: str =
     
     try:
         # 调用登录 API
-        result = api_client.login(username, password)
+        result = asyncio.get_event_loop().run_until_complete(api_client.login(username, password))
         
         # 保存登录状态
         session.user = result["user"]

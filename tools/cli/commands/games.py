@@ -2,13 +2,14 @@
 游戏命令模块 - 游戏列表、选择、查看房间
 """
 import typer
+import asyncio
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 
-from ..config import config
-from ..session import session
-from ..client import api_client
+from config import config
+from session import session
+from client import api_client
 
 app = typer.Typer()
 console = Console()
@@ -18,7 +19,7 @@ console = Console()
 def list_games():
     """列出所有游戏"""
     try:
-        games_list = api_client.list_games()
+        games_list = asyncio.get_event_loop().run_until_complete(api_client.list_games())
         
         if not games_list:
             console.print("[yellow]暂无游戏[/yellow]")
@@ -59,7 +60,7 @@ def list_games():
 def select(game_id: str):
     """选择游戏"""
     try:
-        game = api_client.get_game(game_id)
+        game = asyncio.get_event_loop().run_until_complete(api_client.get_game(game_id))
         
         # 保存当前游戏
         config.set("current_game", game)
@@ -105,7 +106,7 @@ def list_rooms(game_id: str = typer.Argument(None, help="游戏 ID，不传则�
         game_name = game_id
     
     try:
-        rooms_list = api_client.list_rooms(game_id)
+        rooms_list = asyncio.get_event_loop().run_until_complete(api_client.list_rooms(game_id))
         
         if not rooms_list:
             console.print(f"[yellow]🎮 {game_name} 暂无房间[/yellow]")
@@ -170,7 +171,7 @@ def game_info(game_id: str = typer.Argument(None, help="游戏 ID，不传则使
         game_id = current_game["id"]
     
     try:
-        game = api_client.get_game(game_id)
+        game = asyncio.get_event_loop().run_until_complete(api_client.get_game(game_id))
         
         status_style = "green" if game["status"] == "active" else "yellow"
         

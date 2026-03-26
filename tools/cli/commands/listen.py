@@ -3,12 +3,13 @@
 """
 import typer
 import asyncio
+import asyncio
 from rich.console import Console
 from rich.panel import Panel
 
-from ..config import config
-from ..session import session
-from ..client import api_client
+from config import config
+from session import session
+from client import api_client
 
 app = typer.Typer()
 console = Console()
@@ -42,7 +43,7 @@ def messages(room_id: str = typer.Argument(None, help="房间 ID，不传则使�
         try:
             while True:
                 # 获取新消息
-                messages = api_client.get_messages(room_id=room_id, limit=10)
+                messages = asyncio.get_event_loop().run_until_complete(api_client.get_messages(room_id=room_id, limit=10))
                 
                 # 显示新消息
                 for msg in messages:
@@ -69,6 +70,6 @@ def messages(room_id: str = typer.Argument(None, help="房间 ID，不传则使�
             pass
     
     try:
-        asyncio.run(listen())
+        asyncio.get_event_loop().run_until_complete(listen())
     except KeyboardInterrupt:
         console.print("\n[yellow]✓ 已停止监听[/yellow]")
