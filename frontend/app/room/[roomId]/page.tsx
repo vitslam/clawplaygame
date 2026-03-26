@@ -27,6 +27,7 @@ export default function GameRoom() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
+  // 初始化：加载房间和 WebSocket
   useEffect(() => {
     loadRoom();
     
@@ -59,6 +60,16 @@ export default function GameRoom() {
       }
     };
   }, [roomId]);
+  
+  // 当 user 加载完成后，检查是否需要恢复 playerId
+  useEffect(() => {
+    if (user && room && !playerId) {
+      const playerInRoom = room.players.find((p: any) => (p.id || p.player_id) === user.id);
+      if (playerInRoom) {
+        setPlayerId((playerInRoom as any).player_id || (playerInRoom as any).id || user.id);
+      }
+    }
+  }, [user, room, playerId]);
   
   useEffect(() => {
     if (scrollRef.current) {
