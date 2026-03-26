@@ -50,42 +50,60 @@
 
 ## 项目结构
 
+### 后端架构（分层设计）
+
 ```
-clawplaygame/
-├── backend/              # Python FastAPI 后端
-│   ├── app/
-│   │   ├── main.py              # 主入口
-│   │   ├── api/                 # API 路由
-│   │   │   ├── games.py         # 游戏管理
-│   │   │   ├── rooms.py         # 房间管理
-│   │   │   ├── users.py         # 用户管理
-│   │   │   └── avalon.py        # 阿瓦隆游戏逻辑
-│   │   ├── websocket/
-│   │   │   └── manager.py       # WebSocket 管理器
-│   │   ├── db.py                # 数据库操作
-│   │   └── models/              # 数据模型
-│   ├── data/
-│   │   └── clawplay.db          # SQLite 数据库
-│   ├── requirements.txt
-│   └── README.md
-├── frontend/             # Next.js 前端
-│   ├── app/
-│   │   ├── game/[id]/
-│   │   │   └── page.tsx         # 游戏房间列表页
-│   │   ├── room/[roomId]/
-│   │   │   └── page.tsx         # 对局页面
-│   │   ├── layout.tsx
-│   │   └── page.tsx             # 游戏大厅
-│   ├── components/
-│   │   ├── Navbar.tsx           # 导航栏
-│   │   ├── UserMenu.tsx         # 用户菜单
-│   │   └── AuthModal.tsx        # 登录弹窗
-│   ├── lib/
-│   │   ├── api.ts               # API 客户端
-│   │   └── UserContext.tsx      # 用户上下文
-│   └── package.json
-├── origin_version/       # 参考设计版本
-└── README.md             # 项目文档
+backend/
+├── app/
+│   ├── main.py                    # 主入口
+│   ├── api/                       # 接口声明层（路由定义）
+│   │   ├── games.py               # 游戏接口
+│   │   ├── rooms.py               # 房间接口
+│   │   └── users.py               # 用户接口
+│   ├── services/                  # 业务逻辑层
+│   │   ├── room_service.py        # 房间服务
+│   │   ├── user_service.py        # 用户服务 🚧
+│   │   └── game_service.py        # 游戏服务 🚧
+│   ├── games/                     # 游戏逻辑层
+│   │   ├── base.py                # 游戏基类 🚧
+│   │   ├── werewolf.py            # 狼人杀逻辑 🚧
+│   │   ├── avalon.py              # 阿瓦隆逻辑
+│   │   └── botc.py                # 血染钟楼逻辑 🚧
+│   ├── db.py                      # 数据访问层
+│   ├── models/                    # 数据模型层
+│   └── websocket/
+│       └── manager.py             # WebSocket 管理器
+├── data/
+│   └── clawplay.db                # SQLite 数据库
+├── tests/                         # 测试文件
+└── requirements.txt
+```
+
+**分层说明：**
+- **api/** - 接口声明层：只定义路由和请求/响应模型，调用 services 层
+- **services/** - 业务逻辑层：处理业务逻辑，可被多个 API 复用
+- **games/** - 游戏逻辑层：实现具体游戏规则，与业务逻辑解耦
+- **db.py** - 数据访问层：纯数据库操作，不包含业务逻辑
+
+### 前端架构
+
+```
+frontend/
+├── app/
+│   ├── game/[id]/
+│   │   └── page.tsx         # 游戏房间列表页
+│   ├── room/[roomId]/
+│   │   └── page.tsx         # 对局页面
+│   ├── layout.tsx
+│   └── page.tsx             # 游戏大厅
+├── components/
+│   ├── Navbar.tsx           # 导航栏
+│   ├── UserMenu.tsx         # 用户菜单
+│   └── AuthModal.tsx        # 登录弹窗
+├── lib/
+│   ├── api.ts               # API 客户端
+│   └── UserContext.tsx      # 用户上下文
+└── package.json
 ```
 
 ## 快速开始
