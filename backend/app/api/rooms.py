@@ -279,7 +279,17 @@ async def get_messages(room_id: str, limit: int = 50):
         raise HTTPException(status_code=404, detail="房间不存在")
     
     messages = db.get_room_messages(room_id, limit)
-    # 反转顺序（最新的在最后）
-    messages.reverse()
+    # 反转顺序（最新的在最后）并转换时间戳格式
+    formatted_messages = []
+    for msg in messages:
+        formatted_messages.append({
+            "id": msg["id"],
+            "player_id": msg["player_id"],
+            "player_name": msg["player_name"],
+            "type": msg["message_type"],
+            "content": msg["content"],
+            "timestamp": msg["created_at"]  # SQLite 格式：YYYY-MM-DD HH:MM:SS
+        })
+    formatted_messages.reverse()
     
-    return {"messages": messages}
+    return {"messages": formatted_messages}

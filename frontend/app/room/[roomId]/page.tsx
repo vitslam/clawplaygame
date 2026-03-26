@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import Navbar from '@/components/Navbar';
-import { Send, User as UserIcon, Skull, Volume2, MicOff, Info, Clock, Users, Loader2, Play, LogOut } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
+import { Send, Users, Shield, Sword, Eye, Volume2, MicOff, Play, LogOut, Loader2 } from 'lucide-react';
 import { useUser } from '@/lib/UserContext';
-import { getRoom, joinRoom, getMessages, sendMessage, createWebSocket, type Room as RoomType, type Message, type Player } from '@/lib/api';
+import { getRoom, joinRoom, getMessages, sendMessage, createWebSocket, type Room as RoomType, type Message } from '@/lib/api';
 
 export default function GameRoom() {
   const params = useParams();
@@ -20,7 +21,6 @@ export default function GameRoom() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // 弹窗状态
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [nickname, setNickname] = useState('');
   
@@ -30,7 +30,6 @@ export default function GameRoom() {
   useEffect(() => {
     loadRoom();
     
-    // 连接 WebSocket
     try {
       const ws = createWebSocket(roomId);
       ws.onopen = () => console.log('WebSocket connected');
@@ -45,7 +44,7 @@ export default function GameRoom() {
             content: data.type === 'player_joined' ? '玩家加入' : '玩家离开',
             timestamp: data.timestamp
           }]);
-          loadRoom(); // 刷新玩家列表
+          loadRoom();
         }
       };
       ws.onclose = () => console.log('WebSocket disconnected');
@@ -61,22 +60,6 @@ export default function GameRoom() {
     };
   }, [roomId]);
   
-  // 心跳：每 30 秒更新一次活跃时间
-  useEffect(() => {
-    if (!user) return;
-    
-    const heartbeat = async () => {
-      try {
-        await fetch(`/api/users/${user.id}/heartbeat`, { method: 'POST' });
-      } catch (e) {
-        console.error('Heartbeat failed:', e);
-      }
-    };
-    
-    const interval = setInterval(heartbeat, 30000);
-    return () => clearInterval(interval);
-  }, [user]);
-
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -87,23 +70,18 @@ export default function GameRoom() {
     try {
       const data = await getRoom(roomId);
       setRoom(data);
-      
-      // 加载消息历史
       const msgData = await getMessages(roomId);
       setMessages(msgData.messages);
       
-      // 检查是否已经在房间里
       if (user) {
         const alreadyInRoom = data.players.some(p => p.id === user.id);
         if (alreadyInRoom) {
           setPlayerId(user.id);
         } else {
-          // 不在房间里，显示加入弹窗
           setNickname(user.nickname);
           setShowJoinModal(true);
         }
       } else if (data.status === 'waiting') {
-        // 没有用户且房间等待中，显示加入弹窗
         setNickname('玩家_' + Math.random().toString(36).slice(2, 6));
         setShowJoinModal(true);
       }
@@ -120,30 +98,21 @@ export default function GameRoom() {
       alert('请输入昵称');
       return;
     }
-    
     try {
       const { joinRoom } = await import('@/lib/api');
       const result = await joinRoom(roomId, nickname);
-      
-      // 保存用户
       const newUser = { id: result.player.id, nickname };
       setUser(newUser);
       setPlayerId(result.player.id);
       setRoom(result.room);
       setShowJoinModal(false);
-      
-      if (result.already_joined) {
-        console.log('已经在这个房间里了');
-      }
-      
       loadRoom();
     } catch (err) {
       alert('加入房间失败：' + (err as Error).message);
     }
   };
   
-  const handleLeaveRoom = async () => {
-    // 清除本地玩家 ID，但保留用户信息
+  const handleLeaveRoom = () => {
     setPlayerId('');
     router.push('/');
   };
@@ -151,7 +120,6 @@ export default function GameRoom() {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim() || !playerId) return;
-    
     try {
       await sendMessage(roomId, playerId, inputValue);
       setInputValue('');
@@ -162,25 +130,46 @@ export default function GameRoom() {
 
   const handleStartGame = async () => {
     if (!room) return;
-    
-    // 检查人数
-    const minPlayers = room.game_id === 'avalon' ? 5 : 
-                       room.game_id === 'werewolf' ? 6 : 
-                       room.game_id === 'botc' ? 5 : 3;
-    
+    const minPlayers = room.game_id === 'avalon' ? 5 : room.game_id === 'werewolf' ? 6 : 3;
     if (room.players.length < minPlayers) {
-      alert(`人数不足！${room.game_id === 'avalon' ? '阿瓦隆' : room.game_id === 'werewolf' ? '狼人杀' : '本游戏'} 需要至少 ${minPlayers} 人`);
+      alert(`人数不足！需要至少 ${minPlayers} 人`);
       return;
     }
-    
     try {
       const { startGame } = await import('@/lib/api');
       await startGame(roomId);
-      alert('游戏已开始！');
       loadRoom();
     } catch (err) {
       alert('开始游戏失败：' + (err as Error).message);
     }
+  };
+
+  // 格式化时间戳（支持多种格式：ISO、数字时间戳、SQLite 格式）
+  const formatTime = (ts: string) => {
+    if (!ts) return '00:00:00';
+    
+    let date: Date;
+    
+    // 数字时间戳
+    if (typeof ts === 'string' && /^\d+$/.test(ts)) {
+      date = new Date(parseInt(ts));
+    }
+    // SQLite 格式：YYYY-MM-DD HH:MM:SS
+    else if (typeof ts === 'string' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(ts)) {
+      date = new Date(ts.replace(' ', 'T')); // 转为 ISO 格式
+    }
+    // ISO 格式或其他
+    else {
+      date = new Date(ts);
+    }
+    
+    // 检查是否有效
+    if (isNaN(date.getTime())) {
+      console.error('Invalid timestamp:', ts);
+      return '00:00:00';
+    }
+    
+    return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
   if (loading) {
@@ -202,10 +191,7 @@ export default function GameRoom() {
           <div className="text-center">
             <h2 className="text-2xl font-black text-red-600 mb-2">加载失败</h2>
             <p className="text-gray-600">{error}</p>
-            <button 
-              onClick={() => router.back()}
-              className="mt-4 px-6 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700"
-            >
+            <button onClick={() => router.back()} className="mt-4 px-6 py-2 bg-black text-white font-bold uppercase border-2 border-black hover:bg-white hover:text-black">
               返回
             </button>
           </div>
@@ -214,10 +200,10 @@ export default function GameRoom() {
     );
   }
 
-  // 游戏中且公开的房间，可以直接观战（不需要加入）
   const isPlayingAndPublic = room?.status === 'playing' && room?.is_public;
-  
-  // 加入房间弹窗
+  const isWaiting = room?.status === 'waiting';
+  const me = room?.players.find(p => p.id === playerId);
+
   if (showJoinModal) {
     return (
       <div className="flex flex-col h-screen bg-[#f4f4f4]">
@@ -236,20 +222,14 @@ export default function GameRoom() {
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
                   placeholder="输入昵称"
-                  className="w-full border-2 border-black px-4 py-3 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border-2 border-black px-4 py-3 font-mono focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                 />
               </div>
               <div className="flex gap-3">
-                <button
-                  onClick={() => setShowJoinModal(false)}
-                  className="flex-1 bg-gray-200 text-black px-6 py-3 border-2 border-black font-bold uppercase hover:bg-gray-300 transition-all"
-                >
+                <button onClick={() => setShowJoinModal(false)} className="flex-1 bg-gray-200 text-black px-6 py-3 border-2 border-black font-bold uppercase hover:bg-gray-300">
                   取消
                 </button>
-                <button
-                  onClick={handleJoin}
-                  className="flex-1 bg-black text-white px-6 py-3 border-2 border-black font-bold uppercase hover:bg-white hover:text-black transition-all"
-                >
+                <button onClick={handleJoin} className="flex-1 bg-black text-white px-6 py-3 border-2 border-black font-bold uppercase hover:bg-white hover:text-black">
                   {room?.status === 'playing' ? '开始观战' : '加入游戏'}
                 </button>
               </div>
@@ -260,222 +240,203 @@ export default function GameRoom() {
     );
   }
 
-  const me = room?.players.find(p => p.id === playerId);
-  const isWaiting = room?.status === 'waiting';
-
-  // 等待中界面
-  if (isWaiting) {
-    return (
-      <div className="flex flex-col h-screen bg-[#f4f4f4]">
-        <Navbar />
+  return (
+    <div className="flex flex-col h-screen bg-[#f4f4f4] text-black">
+      <Navbar />
+      
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden max-w-[1600px] w-full mx-auto p-4 gap-6">
         
-        <div className="flex-1 flex overflow-hidden max-w-[1600px] w-full mx-auto p-4 lg:p-6 gap-6">
+        {/* 左侧：游戏区域 */}
+        <div className="flex-1 flex flex-col gap-6 overflow-y-auto pr-2">
           
-          {/* Left Column: Players */}
-          <div className="flex flex-col w-80 bg-white border-2 border-black rounded-xl overflow-hidden">
-            <div className="p-5 border-b-2 border-black bg-gray-100">
-              <h3 className="font-bold text-xl flex items-center gap-3">
-                <Users className="w-6 h-6" /> 玩家列表 ({room?.players.length || 0}/{room?.max_players})
-              </h3>
+          {/* 顶部房间信息 */}
+          <div className="flex items-center justify-between border-2 border-black bg-white p-4">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleLeaveRoom}
+                className="font-mono text-sm font-bold uppercase underline hover:bg-black hover:text-white px-2 py-1 transition-colors"
+              >
+                ← 离开房间
+              </button>
+              <h1 className="text-2xl font-black uppercase tracking-tight">房间 #{roomId}</h1>
             </div>
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {room?.players.map((player, index) => (
-                <div 
-                  key={player.id} 
-                  className={`flex items-center justify-between p-3 rounded-lg border-2 ${player.id === playerId ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${player.status === 'alive' ? 'bg-blue-600' : 'bg-gray-400'}`}>
-                      {player.status === 'alive' ? <UserIcon className="w-5 h-5 text-white" /> : <Skull className="w-5 h-5 text-white" />}
-                    </div>
-                    <div>
-                      <span className={`font-bold ${player.status === 'alive' ? 'text-gray-900' : 'text-gray-500 line-through'}`}>
-                        {index + 1}. {player.name}
-                      </span>
-                      {player.id === playerId && <div className="text-xs text-blue-600 font-bold">YOU</div>}
-                      {player.role === 'host' && <div className="text-xs text-orange-600 font-bold">房主</div>}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            {/* 控制区 */}
-            <div className="p-4 border-t-2 border-black bg-gray-50 space-y-2">
-              {room?.players[0]?.id === playerId && (
+            <div className="flex items-center gap-3 font-mono text-sm font-bold uppercase">
+              {room?.status === 'playing' && (
                 <>
-                  <button
-                    onClick={handleStartGame}
-                    disabled={(room?.players.length || 0) < (room?.game_id === 'avalon' ? 5 : room?.game_id === 'werewolf' ? 6 : 3)}
-                    className="w-full bg-green-600 text-white py-3 font-bold uppercase hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-                  >
-                    <Play className="w-5 h-5" /> 开始游戏
-                  </button>
-                  <p className="text-xs text-gray-600 text-center">
-                    最小人数：{room?.game_id === 'avalon' ? '5 人（阿瓦隆）' : room?.game_id === 'werewolf' ? '6 人（狼人杀）' : '3 人'}
-                  </p>
+                  <span className="flex items-center gap-2 text-[#dc2626]">
+                    <div className="w-2 h-2 bg-[#dc2626] rounded-full animate-pulse"></div> 直播中
+                  </span>
+                  <span className="border-l-2 border-black pl-3">第 1 天</span>
                 </>
               )}
-              {playerId && (
-                <button
-                  onClick={handleLeaveRoom}
-                  className="w-full bg-red-600 text-white py-3 font-bold uppercase hover:bg-red-700 transition-all flex items-center justify-center gap-2"
-                >
-                  <LogOut className="w-5 h-5" /> 退出房间
-                </button>
+              {room?.status === 'waiting' && (
+                <span className="text-blue-600">等待中</span>
               )}
             </div>
           </div>
 
-          {/* Middle Column: Chat */}
-          <div className="flex-1 flex flex-col bg-white border-2 border-black rounded-xl overflow-hidden">
-            {/* Header */}
-            <div className="h-16 border-b-2 border-black flex items-center justify-between px-6 bg-gray-100">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-                <span className="font-black text-xl">ROOM #{roomId.toUpperCase()}</span>
-                <span className="text-xs font-bold px-2 py-1 rounded bg-blue-100 text-blue-700">等待中</span>
-              </div>
-              <div className="text-sm font-bold text-gray-600">
-                等待玩家加入...
-              </div>
-            </div>
-
-            {/* Messages */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4">
-              {messages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.type === 'system' ? 'justify-center' : (msg.player_id === playerId ? 'justify-end' : 'justify-start')}`}>
-                  {msg.type === 'system' ? (
-                    <div className="bg-gray-100 border-2 border-gray-300 text-gray-700 px-4 py-2 rounded-full text-sm flex items-center gap-2">
-                      <Info className="w-4 h-4" /> {msg.content}
-                    </div>
-                  ) : (
-                    <div className={`max-w-[70%] px-4 py-3 rounded-xl border-2 ${msg.player_id === playerId ? 'bg-blue-600 text-white border-blue-700' : 'bg-gray-100 text-gray-900 border-gray-200'}`}>
-                      <div className="text-xs font-bold mb-1 opacity-75">{msg.player_name || '玩家'}</div>
-                      <div className="text-sm">{msg.content}</div>
-                    </div>
+          {/* 玩家卡片网格 */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {room?.players.map((player, index) => {
+              const isMe = player.id === playerId;
+              const isAlive = player.status === 'alive';
+              return (
+                <div 
+                  key={player.id} 
+                  className={`relative flex flex-col items-center justify-center p-6 border-2 border-black transition-all ${
+                    isAlive ? 'bg-white hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-gray-200 opacity-60'
+                  } ${isMe ? 'ring-4 ring-[#16a34a] ring-offset-2' : ''}`}
+                >
+                  {isMe && (
+                    <div className="absolute top-2 left-2 font-mono text-[10px] font-bold uppercase bg-black text-white px-2 py-1">你</div>
                   )}
+                  <div className="absolute top-2 right-2 font-mono text-xs font-bold uppercase">#{index + 1}</div>
+                  
+                  <div className={`w-16 h-16 rounded-full border-2 border-black mb-4 flex items-center justify-center ${isAlive ? 'bg-[#f4f4f4]' : 'bg-gray-400'}`}>
+                    <Users className="w-8 h-8" />
+                  </div>
+                  
+                  <h3 className="font-black uppercase tracking-tight text-lg truncate w-full text-center">{player.name}</h3>
+                  
+                  <div className="flex items-center gap-2 mt-2 font-mono text-xs font-bold uppercase">
+                    {isAlive ? (
+                      <span className="text-[#16a34a]">存活</span>
+                    ) : (
+                      <span className="text-[#dc2626]">死亡 ({player.role || '?'})</span>
+                    )}
+                  </div>
                 </div>
-              ))}
+              );
+            })}
+            
+            {/* 空位 */}
+            {room && Array.from({ length: room.max_players - room.players.length }).map((_, i) => (
+              <div 
+                key={`empty-${i}`}
+                className="relative flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-400 bg-gray-100"
+              >
+                <div className="absolute top-2 right-2 font-mono text-xs font-bold uppercase text-gray-400">#{room.players.length + i + 1}</div>
+                <div className="w-16 h-16 rounded-full border-2 border-dashed border-gray-400 mb-4 flex items-center justify-center">
+                  <Users className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="font-mono text-sm font-bold uppercase text-gray-400">等待玩家</h3>
+              </div>
+            ))}
+          </div>
+          
+          {/* 身份&行动区域 */}
+          {me && room?.status === 'playing' && (
+            <div className="mt-auto border-2 border-black bg-white p-6 flex flex-col md:flex-row gap-6 items-center justify-between">
+              <div className="flex items-center gap-6">
+                <div className="w-16 h-16 border-2 border-black bg-[#2563eb] flex items-center justify-center text-white">
+                  <Eye className="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 className="font-mono text-sm font-bold uppercase text-gray-600 mb-1">你的身份</h3>
+                  <div className="text-4xl font-black uppercase tracking-tight text-[#2563eb]">预言家</div>
+                  <p className="font-mono text-xs font-bold uppercase mt-1">好人阵营。每晚可以查验一名玩家的身份。</p>
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-2 w-full md:w-auto">
+                <button className="w-full md:w-48 border-2 border-black bg-black text-white px-4 py-3 font-bold uppercase hover:bg-white hover:text-black transition-colors flex items-center justify-center gap-2">
+                  <Sword className="w-4 h-4" /> 投票放逐
+                </button>
+                <button className="w-full md:w-48 border-2 border-gray-300 bg-gray-50 text-gray-400 px-4 py-3 font-bold uppercase cursor-not-allowed flex items-center justify-center gap-2">
+                  <Eye className="w-4 h-4" /> 查验身份
+                </button>
+              </div>
             </div>
+          )}
+          
+          {/* 房主开始按钮 */}
+          {isWaiting && room?.players[0]?.id === playerId && (
+            <div className="mt-auto border-2 border-black bg-white p-6">
+              <button
+                onClick={handleStartGame}
+                disabled={(room?.players.length || 0) < 3}
+                className="w-full border-2 border-black bg-[#16a34a] text-white px-4 py-4 font-bold uppercase hover:bg-[#15803d] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-lg"
+              >
+                <Play className="w-6 h-6" /> 开始游戏
+              </button>
+              <p className="font-mono text-xs text-gray-600 text-center mt-2">
+                最小人数：3 人
+              </p>
+            </div>
+          )}
+        </div>
 
-            {/* Input - 只有已加入的玩家可以发言 */}
-            {playerId && (
-              <form onSubmit={handleSendMessage} className="p-4 border-t-2 border-black bg-gray-50 flex gap-3">
-                <input
-                  type="text"
+        {/* 右侧：聊天&日志 */}
+        <div className="w-full lg:w-96 border-2 border-black bg-white flex flex-col h-[500px] lg:h-auto">
+          <div className="bg-[#f4f4f4] border-b-2 border-black p-4 font-black uppercase tracking-tight text-lg">
+            游戏日志 & 聊天
+          </div>
+          
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 font-mono text-sm">
+            {messages.map((msg) => {
+              const time = formatTime(msg.timestamp);
+              
+              if (msg.type === 'system') {
+                return (
+                  <div key={msg.id} className="flex flex-col">
+                    <div className="text-[10px] text-gray-500 font-bold mb-1">{time}</div>
+                    <div className="font-bold text-[#dc2626] uppercase border-l-2 border-[#dc2626] pl-2">
+                      系统：{msg.content}
+                    </div>
+                  </div>
+                );
+              }
+              
+              if (msg.content.includes('查验了') || msg.content.includes('使用')) {
+                return (
+                  <div key={msg.id} className="flex flex-col">
+                    <div className="text-[10px] text-gray-500 font-bold mb-1">{time}</div>
+                    <div className="font-bold text-[#2563eb] uppercase border-l-2 border-[#2563eb] pl-2">
+                      动作：{msg.player_name} {msg.content}
+                    </div>
+                  </div>
+                );
+              }
+              
+              return (
+                <div key={msg.id} className="flex flex-col">
+                  <div className="text-[10px] text-gray-500 font-bold mb-1">{time}</div>
+                  <div className="bg-[#f4f4f4] border-2 border-black p-2">
+                    <span className="font-bold uppercase">{msg.player_name || '玩家'}: </span>
+                    <span>{msg.content}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          {playerId && (
+            <div className="border-t-2 border-black p-4 bg-[#f4f4f4]">
+              <form onSubmit={handleSendMessage} className="flex gap-2">
+                <input 
+                  type="text" 
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="输入消息..."
-                  className="flex-1 border-2 border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="输入消息..." 
+                  className="flex-1 border-2 border-black bg-white px-3 py-2 outline-none font-mono text-sm placeholder:text-gray-400 focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-shadow"
                 />
                 <button 
                   type="submit"
                   disabled={!inputValue.trim()}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="border-2 border-black bg-black text-white w-10 flex items-center justify-center hover:bg-white hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Send className="w-5 h-5" /> 发送
+                  <Send className="w-4 h-4" />
                 </button>
               </form>
-            )}
-            {!playerId && isPlayingAndPublic && (
-              <div className="p-4 border-t-2 border-black bg-gray-100 text-center text-sm font-bold text-gray-600 uppercase">
-                👁️ 观战模式 - 无法发言
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // 游戏中界面
-  return (
-    <div className="flex flex-col h-screen bg-[#f4f4f4]">
-      <Navbar />
-      
-      <div className="flex-1 flex overflow-hidden max-w-[1600px] w-full mx-auto p-4 lg:p-6 gap-6">
-        
-        {/* Left Column: Players */}
-        <div className="hidden lg:flex flex-col w-72 bg-white border-2 border-black rounded-xl overflow-hidden">
-          <div className="p-5 border-b-2 border-black bg-gray-100">
-            <h3 className="font-bold text-xl flex items-center gap-3">
-              <Users className="w-6 h-6" /> 玩家列表
-            </h3>
-          </div>
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {room?.players.map((player, index) => (
-              <div 
-                key={player.id} 
-                className={`flex items-center justify-between p-3 rounded-lg border-2 ${player.id === playerId ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${player.status === 'alive' ? 'bg-blue-600' : 'bg-gray-400'}`}>
-                    {player.status === 'alive' ? <UserIcon className="w-5 h-5 text-white" /> : <Skull className="w-5 h-5 text-white" />}
-                  </div>
-                  <div>
-                    <span className={`font-bold ${player.status === 'alive' ? 'text-gray-900' : 'text-gray-500 line-through'}`}>
-                      {index + 1}. {player.name}
-                    </span>
-                    {player.id === playerId && <div className="text-xs text-blue-600 font-bold">YOU</div>}
-                  </div>
-                </div>
-                {player.status === 'alive' ? <Volume2 className="w-4 h-4 text-gray-400" /> : <MicOff className="w-4 h-4 text-gray-400" />}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Middle Column: Chat */}
-        <div className="flex-1 flex flex-col bg-white border-2 border-black rounded-xl overflow-hidden">
-          {/* Header */}
-          <div className="h-16 border-b-2 border-black flex items-center justify-between px-6 bg-gray-100">
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-              <span className="font-black text-xl">ROOM #{roomId.toUpperCase()}</span>
-              <span className="text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-700">游戏中</span>
             </div>
-            <div className="text-sm font-bold flex items-center gap-2 bg-blue-100 px-4 py-2 rounded-lg">
-              <Clock className="w-4 h-4" /> 第 1 轮
+          )}
+          {!playerId && isPlayingAndPublic && (
+            <div className="border-t-2 border-black p-4 bg-gray-100 text-center text-sm font-bold text-gray-600 uppercase">
+              👁️ 观战模式 - 无法发言
             </div>
-          </div>
-
-          {/* Messages */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4">
-            {messages.map((msg) => (
-              <div key={msg.id} className={`flex ${msg.type === 'system' ? 'justify-center' : (msg.player_id === playerId ? 'justify-end' : 'justify-start')}`}>
-                {msg.type === 'system' ? (
-                  <div className="bg-gray-100 border-2 border-gray-300 text-gray-700 px-4 py-2 rounded-full text-sm flex items-center gap-2">
-                    <Info className="w-4 h-4" /> {msg.content}
-                  </div>
-                ) : (
-                  <div className={`max-w-[70%] px-4 py-3 rounded-xl border-2 ${msg.player_id === playerId ? 'bg-blue-600 text-white border-blue-700' : 'bg-gray-100 text-gray-900 border-gray-200'}`}>
-                    <div className="text-xs font-bold mb-1 opacity-75">{msg.player_name || '玩家'}</div>
-                    <div className="text-sm">{msg.content}</div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Input */}
-          <form onSubmit={handleSendMessage} className="p-4 border-t-2 border-black bg-gray-50 flex gap-3">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="输入消息..."
-              className="flex-1 border-2 border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button 
-              type="submit"
-              disabled={!inputValue.trim()}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              <Send className="w-5 h-5" /> 发送
-            </button>
-          </form>
+          )}
         </div>
+
       </div>
     </div>
   );

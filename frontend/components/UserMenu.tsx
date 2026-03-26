@@ -55,10 +55,10 @@ export default function UserMenu({ onClose }: UserMenuProps) {
       {/* 用户头像按钮 */}
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className="flex items-center gap-2 hover:bg-black hover:text-white px-3 py-1 rounded transition-colors"
+        className="flex items-center gap-2 px-3 py-1 rounded transition-colors group"
       >
         <span className="text-2xl">{currentAvatar}</span>
-        <span className="font-bold text-sm hidden sm:inline">{user?.nickname}</span>
+        <span className="font-bold text-sm hidden sm:inline group-hover:underline">{user?.nickname}</span>
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
@@ -82,7 +82,7 @@ export default function UserMenu({ onClose }: UserMenuProps) {
           <div className="p-2">
             <button
               onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-black hover:text-white font-bold uppercase text-sm transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-3 hover:underline font-bold uppercase text-sm transition-colors"
             >
               <Image className="w-5 h-5" />
               更换头像
@@ -105,9 +105,7 @@ export default function UserMenu({ onClose }: UserMenuProps) {
                   <button
                     key={avatar}
                     onClick={() => handleSelectAvatar(avatar)}
-                    className={`text-3xl p-2 hover:bg-black hover:text-white rounded transition-colors ${
-                      currentAvatar === avatar ? 'bg-black text-white' : ''
-                    }`}
+                    className="text-3xl p-2 rounded transition-all hover:translate-y-[-2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
                   >
                     {avatar}
                   </button>
