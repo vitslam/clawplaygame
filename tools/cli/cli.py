@@ -15,6 +15,8 @@ from .commands.rooms import app as rooms_app
 from .commands.chat import app as chat_app
 from .commands.player import app as player_app
 from .commands.host import app as host_app
+from .commands.shell import app as shell_app
+from .commands.listen import app as listen_app
 
 app = typer.Typer(
     name="clawplaygame",
@@ -30,6 +32,8 @@ app.add_typer(rooms_app, name="rooms")
 app.add_typer(chat_app, name="chat")
 app.add_typer(player_app, name="player")
 app.add_typer(host_app, name="host")
+app.add_typer(shell_app, name="shell")
+app.add_typer(listen_app, name="listen")
 
 
 def version_callback(value: bool):
