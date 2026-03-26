@@ -30,6 +30,7 @@ export default function GameRoom() {
   const [isEditingName, setIsEditingName] = useState(false); // 是否正在编辑房间名
   const [editingRoomName, setEditingRoomName] = useState(''); // 编辑中的房间名
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // 解散房间确认弹窗
+  const [myReady, setMyReady] = useState(false); // 我的准备状态
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -150,9 +151,37 @@ export default function GameRoom() {
     }
   };
   
-  const handleLeaveRoom = () => {
+  const handleLeaveRoom = async () => {
+    if (!room || !playerId) return;
+    
+    // 房主离开时需要处理
+    if (isHost && isWaiting) {
+      const otherPlayers = room.players.filter((p: any) => (p.player_id || p.id) !== playerId);
+      
+      if (otherPlayers.length === 0) {
+        // 没有其他玩家，自动解散房间
+        if (confirm('房间内没有其他玩家，离开将自动解散房间。确定离开吗？')) {
+          await handleDeleteRoom();
+          return;
+        } else {
+          return; // 取消离开
+        }
+      } else {
+        // 有其它玩家，按座位号转让给下一个人
+        const newHost: any = otherPlayers[0];
+        try {
+          const { transferHost } = await import('@/lib/api');
+          await transferHost(roomId, playerId, newHost.player_id || newHost.id);
+          alert(`房主已移交给 ${newHost.player_name}`);
+        } catch (err) {
+          alert('移交房主失败：' + (err as Error).message);
+          return; // 不移交则不离开
+        }
+      }
+    }
+    
     setPlayerId('');
-    // 返回房间列表页（游戏详情页）- 从房间数据获取 game_id
+    // 返回房间列表页（游戏详情页）
     if (room?.game_id) {
       router.push(`/game/${room.game_id}`);
     } else {
@@ -410,7 +439,7 @@ export default function GameRoom() {
                   ) : (
                     <h1 
                       onClick={() => { setEditingRoomName(room.room_name); setIsEditingName(true); }}
-                      className="text-2xl font-black uppercase tracking-tight cursor-pointer hover:bg-black hover:text-white px-2 py-1 transition-colors"
+                      className="text-2xl font-black uppercase tracking-tight cursor-pointer hover:underline px-2 py-1 transition-colors"
                     >
                       {room?.room_name || `房间 #${roomId}`}
                     </h1>
@@ -428,17 +457,17 @@ export default function GameRoom() {
                         alert('修改房间设置失败');
                       }
                     }}
-                    className={`relative w-20 h-8 border-2 border-black font-bold text-xs uppercase transition-colors ${
+                    className={`relative w-20 h-8 border-2 border-black font-bold text-xs uppercase transition-colors overflow-hidden ${
                       room?.is_public ? 'bg-[#16a34a] text-white' : 'bg-gray-400 text-white'
                     }`}
                   >
-                    <div className={`absolute top-0.5 left-0.5 w-7 h-6 bg-white border-2 border-black transition-transform ${
-                      room?.is_public ? 'translate-x-11' : 'translate-x-0'
+                    <div className={`absolute top-0.5 left-0.5 w-8 h-7 bg-white border-2 border-black transition-transform ${
+                      room?.is_public ? 'translate-x-10' : 'translate-x-0'
                     }`} />
-                    <span className={`absolute left-2 top-1/2 -translate-y-1/2 ${room?.is_public ? 'opacity-100' : 'opacity-50'}`}>
+                    <span className={`absolute left-1.5 top-1/2 -translate-y-1/2 text-[10px] ${room?.is_public ? 'opacity-100' : 'opacity-50'}`}>
                       公开
                     </span>
-                    <span className={`absolute right-2 top-1/2 -translate-y-1/2 ${room?.is_public ? 'opacity-50' : 'opacity-100'}`}>
+                    <span className={`absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] ${room?.is_public ? 'opacity-50' : 'opacity-100'}`}>
                       私有
                     </span>
                   </button>
@@ -446,9 +475,9 @@ export default function GameRoom() {
                   {/* 解散房间按钮 */}
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="bg-[#dc2626] text-white px-4 py-2 border-2 border-[#991b1b] font-bold uppercase hover:bg-[#991b1b] hover:text-white transition-colors"
+                    className="bg-[#dc2626] text-white px-3 py-1.5 border-2 border-[#991b1b] font-bold uppercase text-xs hover:bg-[#991b1b] hover:text-white transition-colors"
                   >
-                    解散房间
+                    解散
                   </button>
                 </div>
               ) : (
@@ -476,6 +505,7 @@ export default function GameRoom() {
               const isMe = (player.player_id || player.id) === playerId;
               const isAlive = player.status === 'alive';
               const isHost = player.role === 'host' || (room as any).host_id === player.player_id;
+              const isReady = player.is_ready || false;
               
               return (
                 <div 
@@ -488,13 +518,16 @@ export default function GameRoom() {
                   }}
                   className={`relative flex flex-col items-center justify-center p-6 border-2 border-black transition-all cursor-${isWaiting && isHost && !isMe ? 'pointer' : 'default'} ${
                     isAlive ? 'bg-white hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-gray-200 opacity-60'
-                  } ${isMe ? 'ring-4 ring-[#16a34a] ring-offset-2' : ''}`}
+                  } ${isMe ? 'ring-4 ring-[#16a34a] ring-offset-2' : ''} ${isReady ? 'ring-2 ring-green-500' : ''}`}
                 >
                   {isMe && (
                     <div className="absolute top-2 left-2 font-mono text-[10px] font-bold uppercase bg-black text-white px-2 py-1">你</div>
                   )}
                   {isHost && (
                     <div className="absolute top-2 left-2 font-mono text-[10px] font-bold uppercase bg-orange-500 text-white px-2 py-1">房主</div>
+                  )}
+                  {isReady && (
+                    <div className="absolute top-2 left-2 font-mono text-[10px] font-bold uppercase bg-green-600 text-white px-2 py-1">已准备</div>
                   )}
                   <div className="absolute top-2 right-2 font-mono text-xs font-bold uppercase">#{index + 1}</div>
                   
@@ -555,19 +588,37 @@ export default function GameRoom() {
             </div>
           )}
           
-          {/* 房主开始按钮 */}
-          {isWaiting && room?.players[0]?.id === playerId && (
+          {/* 准备状态和开始游戏区域 */}
+          {isWaiting && (
             <div className="mt-auto border-2 border-black bg-white p-6">
-              <button
-                onClick={handleStartGame}
-                disabled={(room?.players.length || 0) < 3}
-                className="w-full border-2 border-black bg-[#16a34a] text-white px-4 py-4 font-bold uppercase hover:bg-[#15803d] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-lg"
-              >
-                <Play className="w-6 h-6" /> 开始游戏
-              </button>
-              <p className="font-mono text-xs text-gray-600 text-center mt-2">
-                最小人数：3 人
-              </p>
+              {isHost ? (
+                <>
+                  <button
+                    onClick={handleStartGame}
+                    disabled={(room?.players.length || 0) < 3 || !room?.players.every((p: any) => p.is_ready)}
+                    className="w-full border-2 border-black bg-[#16a34a] text-white px-4 py-4 font-bold uppercase hover:bg-[#15803d] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-lg"
+                  >
+                    <Play className="w-6 h-6" /> 开始游戏
+                  </button>
+                  <p className="font-mono text-xs text-gray-600 text-center mt-2">
+                    最小人数：3 人 {room?.players.some((p: any) => !p.is_ready) && '• 等待所有玩家准备'}
+                  </p>
+                </>
+              ) : (
+                <button
+                  onClick={async () => {
+                    // TODO: 调用 API 切换准备状态
+                    setMyReady(!myReady);
+                  }}
+                  className={`w-full border-2 border-black px-4 py-4 font-bold uppercase transition-all flex items-center justify-center gap-2 text-lg ${
+                    myReady 
+                      ? 'bg-gray-400 text-gray-600 shadow-inner translate-y-1' 
+                      : 'bg-[#16a34a] text-white hover:bg-[#15803d]'
+                  }`}
+                >
+                  {myReady ? '✓ 已准备' : '准备'}
+                </button>
+              )}
             </div>
           )}
         </div>
