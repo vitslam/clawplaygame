@@ -75,12 +75,14 @@ export default function GameRoom() {
       
       if (user) {
         // 已登录用户：检查是否已在房间
-        const alreadyInRoom = data.players.some((p: any) => (p.id || p.player_id) === user.id);
-        if (alreadyInRoom) {
-          setPlayerId(user.id);
+        const playerInRoom = data.players.find((p: any) => (p.id || p.player_id) === user.id);
+        if (playerInRoom) {
+          // 使用实际的 player_id（可能是 player_id 或 id）
+          setPlayerId((playerInRoom as any).player_id || (playerInRoom as any).id || user.id);
         } else if (data.status === 'waiting') {
           // 等待中的房间，已登录用户直接加入
-          handleAutoJoin(user.nickname);
+          await handleAutoJoin(user.nickname);
+          return; // handleAutoJoin 会调用 loadRoom，所以这里直接返回
         }
         // 游戏中的房间，已登录用户可以观战（不加入）
       }
@@ -102,9 +104,11 @@ export default function GameRoom() {
       setUser(newUser);
       setPlayerId(result.player.id || result.player.player_id || user?.id || '');
       setRoom(result.room);
-      loadRoom();
+      // 不调用 loadRoom，避免无限循环
+      setLoading(false);
     } catch (err) {
       alert('加入房间失败：' + (err as Error).message);
+      setLoading(false);
     }
   };
 
@@ -241,7 +245,7 @@ export default function GameRoom() {
 
   const isPlayingAndPublic = room?.status === 'playing' && room?.is_public;
   const isWaiting = room?.status === 'waiting';
-  const me = room?.players.find((p: any) => p.player_id === playerId);
+  const me = room?.players.find((p: any) => (p.player_id || p.id) === playerId);
 
   if (showJoinModal) {
     // 未登录用户不能加入，直接显示观战提示
