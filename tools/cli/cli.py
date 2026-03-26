@@ -10,6 +10,7 @@ from rich.panel import Panel
 from .config import config
 from .session import session
 from .client import api_client
+from .commands.auth import app as auth_app
 
 app = typer.Typer(
     name="clawplaygame",
@@ -17,6 +18,9 @@ app = typer.Typer(
     add_completion=False
 )
 console = Console()
+
+# 注册子命令组
+app.add_typer(auth_app, name="auth")
 
 
 def version_callback(value: bool):
@@ -38,55 +42,6 @@ def main(
 ):
     """ClawPlayGame CLI 主入口"""
     pass
-
-
-# ========== 认证命令 ==========
-
-@app.group()
-def auth():
-    """认证相关命令"""
-    pass
-
-
-@auth.command()
-def login(username: str, password: str):
-    """登录（开发中）"""
-    console.print("[yellow]⚠️  登录功能开发中...[/yellow]")
-    console.print("当前仅支持游客模式")
-
-
-@auth.command()
-def guest():
-    """以游客身份登录"""
-    console.print("[green]✓ 游客登录成功[/green]")
-    console.print(f"API 地址：{config.api_url}")
-
-
-@auth.command()
-def logout():
-    """登出"""
-    session.clear()
-    console.print("[green]✓ 已登出[/green]")
-
-
-@auth.command()
-def status():
-    """查看登录状态"""
-    if session.is_logged_in:
-        console.print(Panel(
-            f"[bold]用户:[/bold] {session.user_name}\n"
-            f"[bold]ID:[/bold] {session.user_id}\n"
-            f"[bold]API:[/bold] {config.api_url}",
-            title="👤 已登录",
-            border_style="green"
-        ))
-    else:
-        console.print(Panel(
-            "[yellow]未登录[/yellow]\n"
-            "使用 [bold]clawplaygame auth guest[/bold] 以游客身份登录",
-            title="⚠️  未登录",
-            border_style="yellow"
-        ))
 
 
 # ========== 游戏命令 ==========

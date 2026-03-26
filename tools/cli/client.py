@@ -23,6 +23,43 @@ class APIClient:
         if self._ws:
             await self._ws.close()
     
+    # ========== 用户认证 API ==========
+    
+    async def register(self, username: str, password: str, nickname: str) -> Dict:
+        """注册用户"""
+        response = await self._client.post(
+            "/api/users/register",
+            json={
+                "username": username,
+                "password": password,
+                "nickname": nickname
+            }
+        )
+        response.raise_for_status()
+        return response.json()
+    
+    async def login(self, username: str, password: str) -> Dict:
+        """用户登录"""
+        response = await self._client.post(
+            "/api/users/login",
+            json={
+                "username": username,
+                "password": password
+            }
+        )
+        response.raise_for_status()
+        return response.json()
+    
+    async def get_user(self, user_id: str) -> Dict:
+        """获取用户信息"""
+        response = await self._client.get(f"/api/users/{user_id}")
+        response.raise_for_status()
+        return response.json()
+    
+    async def update_heartbeat(self, user_id: str) -> None:
+        """更新用户活跃时间"""
+        await self._client.post(f"/api/users/{user_id}/heartbeat")
+    
     # ========== 游戏 API ==========
     
     async def list_games(self) -> List[Dict]:

@@ -4,12 +4,12 @@
 
 ## 项目状态
 
-**当前阶段**: Phase 1 - 基础框架 ✅
+**当前阶段**: Phase 2 - 认证模块 ✅
 
 | Phase | 状态 | 进度 |
 |-------|------|------|
 | Phase 1: 基础框架 | ✅ 已完成 | 100% |
-| Phase 2: 认证模块 | ⏳ 待开始 | - |
+| Phase 2: 认证模块 | ✅ 已完成 | 100% |
 | Phase 3: 游戏和房间模块 | ⏳ 待开始 | - |
 | Phase 4: 聊天和玩家模块 | ⏳ 待开始 | - |
 | Phase 5: 房主模块 | ⏳ 待开始 | - |
@@ -83,15 +83,29 @@ cli/
 
 ### Phase 2: 认证模块 🔐
 
-- [ ] **2.1** 注册命令
-  - [ ] `clawplaygame auth register <username> <password> <nickname>`
-- [ ] **2.2** 登录命令
-  - [ ] `clawplaygame auth login <username> <password>`
-  - [ ] `clawplaygame auth login --guest`（游客模式）
-- [ ] **2.3** 登出命令
-  - [ ] `clawplaygame auth logout`
-- [ ] **2.4** 状态查询
-  - [ ] `clawplaygame auth status`
+- [x] **2.1** 注册命令
+  - [x] `clawplaygame auth register <username> <nickname>`
+  - [x] 密码输入（隐藏）
+  - [x] 密码确认
+  - [x] 密码长度验证
+- [x] **2.2** 登录命令
+  - [x] `clawplaygame auth login <username> [password]`
+  - [x] 密码可选参数（不提供则提示输入）
+  - [x] 登录错误处理
+- [x] **2.3** 游客登录
+  - [x] `clawplaygame auth guest`
+  - [x] 生成游客 ID 和昵称
+  - [x] 游客模式标识
+- [x] **2.4** 登出命令
+  - [x] `clawplaygame auth logout`
+  - [x] 清除会话
+- [x] **2.5** 状态查询
+  - [x] `clawplaygame auth status`
+  - [x] 显示用户信息
+  - [x] 显示登录模式（正式/游客）
+- [x] **2.6** 用户信息
+  - [x] `clawplaygame auth info`
+  - [x] 显示详细信息
 
 ### Phase 3: 游戏和房间模块 🎮
 
@@ -205,6 +219,23 @@ clawplaygame host start
 
 ## 开发进度
 
+### 2026-03-26 - Phase 2 完成 🎉
+- ✅ 实现认证命令模块（commands/auth.py）
+  - register - 用户注册（密码隐藏输入、确认、验证）
+  - login - 用户登录（密码可选参数）
+  - guest - 游客登录（生成随机 ID 和昵称）
+  - logout - 登出（清除会话）
+  - status - 查看登录状态（显示模式、房间状态）
+  - info - 查看用户信息
+- ✅ 添加用户认证 API（client.py）
+  - register() - 注册用户
+  - login() - 用户登录
+  - get_user() - 获取用户信息
+  - update_heartbeat() - 更新活跃时间
+- ✅ CLI 集成认证模块
+  - 使用 add_typer() 注册子命令组
+  - 移除旧的简单 auth 实现
+
 ### 2026-03-26 - Phase 1 完成 🎉
 - ✅ 创建项目目录结构
 - ✅ 编写 TODO 计划和技术方案
@@ -217,7 +248,6 @@ clawplaygame host start
   - 消息 API（send, get）
   - WebSocket 框架
 - ✅ 实现 CLI 入口（cli.py）
-  - auth 命令组（login, guest, logout, status）
   - games 命令组（list, select, rooms）
   - rooms 命令组（create, join, leave, info）
   - chat 命令组（send, history）
