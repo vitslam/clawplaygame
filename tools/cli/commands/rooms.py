@@ -129,9 +129,15 @@ def leave():
         return
     
     room_name = session.room.get("room_name", "房间")
+    room_id = session.room_id
     
     try:
-        # 前端逻辑，无需调用 API
+        # 调用 API 离开房间
+        import httpx
+        api_url = config.api_url
+        response = httpx.post(f"{api_url}/api/rooms/{room_id}/leave", params={"player_id": session.user_id})
+        response.raise_for_status()
+        
         session.room = None
         
         console.print(Panel(

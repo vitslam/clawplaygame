@@ -294,6 +294,26 @@ async def toggle_ready(room_id: str, request: ToggleReadyRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.post("/{room_id}/leave")
+async def leave_room(room_id: str, player_id: str):
+    """玩家离开房间"""
+    from app import db
+    
+    room = db.get_room(room_id)
+    if not room:
+        raise HTTPException(status_code=404, detail="房间不存在")
+    
+    # 从房间移除玩家
+    db.kick_player(room_id, player_id)
+    
+    # 添加系统消息
+    player = next((p for p in db.get_room_players(room_id) if p["player_id"] == player_id), None)
+    if player:
+        db.add_message(room_id, f"{player['player_name']} 离开了房间", "system")
+    
+    return {"success": True}
+
+
 @router.post("/{room_id}/kick")
 async def kick_player(room_id: str, request: KickPlayerRequest, host_id: str = None):
     """房主踢出玩家"""
