@@ -394,6 +394,62 @@ def add_message(room_id: str, content: str, message_type: str = 'chat',
             return False
 
 
+# ============ 房主权限操作 ============
+
+def kick_player(room_id: str, player_id: str) -> bool:
+    """房主踢出玩家"""
+    with get_db() as conn:
+        try:
+            conn.execute("DELETE FROM room_players WHERE room_id = ? AND player_id = ?", (room_id, player_id))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"踢出玩家失败：{e}")
+            return False
+
+
+def transfer_host(room_id: str, new_host_id: str, new_host_name: str) -> bool:
+    """移交房主权限"""
+    with get_db() as conn:
+        try:
+            conn.execute(
+                "UPDATE rooms SET host_id = ?, host_name = ? WHERE id = ?",
+                (new_host_id, new_host_name, room_id)
+            )
+            # 更新原房主角色
+            conn.execute(
+                "UPDATE room_players SET role = 'player' WHERE room_id = ? AND role = 'host'",
+                (room_id,)
+            )
+            # 更新新房主角色
+            conn.execute(
+                "UPDATE room_players SET role = 'host' WHERE room_id = ? AND player_id = ?",
+                (room_id, new_host_id)
+            )
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"移交房主失败：{e}")
+            return False
+
+
+def update_room_info(room_id: str, room_name: str = None, is_public: bool = None) -> bool:
+    """修改房间信息"""
+    with get_db() as conn:
+        try:
+            if room_name:
+                conn.execute("UPDATE rooms SET room_name = ? WHERE id = ?", (room_name, room_id))
+            if is_public is not None:
+                conn.execute("UPDATE rooms SET is_public = ? WHERE id = ?", (1 if is_public else 0, room_id))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"修改房间信息失败：{e}")
+            return False
+
+
+# ============ 消息操作 ============
+
 def get_room_messages(room_id: str, limit: int = 50) -> List[dict]:
     """获取房间消息"""
     with get_db() as conn:

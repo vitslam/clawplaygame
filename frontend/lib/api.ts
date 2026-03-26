@@ -135,11 +135,41 @@ export async function startGame(roomId: string): Promise<{ success: boolean; roo
   return res.json();
 }
 
-export async function deleteRoom(roomId: string): Promise<{ success: boolean }> {
-  const res = await fetch(`${API_BASE_URL}/api/rooms/${roomId}`, {
+export async function deleteRoom(roomId: string, hostId: string): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE_URL}/api/rooms/${roomId}?host_id=${hostId}`, {
     method: 'DELETE',
   });
   if (!res.ok) throw new Error('删除房间失败');
+  return res.json();
+}
+
+export async function kickPlayer(roomId: string, hostId: string, playerId: string): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE_URL}/api/rooms/${roomId}/kick?host_id=${hostId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ player_id: playerId }),
+  });
+  if (!res.ok) throw new Error('踢出玩家失败');
+  return res.json();
+}
+
+export async function transferHost(roomId: string, hostId: string, newHostId: string): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE_URL}/api/rooms/${roomId}/transfer-host?host_id=${hostId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ new_host_id: newHostId }),
+  });
+  if (!res.ok) throw new Error('移交房主失败');
+  return res.json();
+}
+
+export async function updateRoom(roomId: string, hostId: string, roomName?: string, isPublic?: boolean): Promise<Room> {
+  const res = await fetch(`${API_BASE_URL}/api/rooms/${roomId}?host_id=${hostId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ room_name: roomName, is_public: isPublic }),
+  });
+  if (!res.ok) throw new Error('修改房间信息失败');
   return res.json();
 }
 
