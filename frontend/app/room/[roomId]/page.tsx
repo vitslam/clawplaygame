@@ -61,6 +61,13 @@ export default function GameRoom() {
         if (eventType === 'chat') {
           console.log('处理聊天消息:', data.data);
           const msgData = data.data;
+          
+          // 过滤掉自己发送的消息（已经本地添加了）
+          if (msgData.player_id === playerId) {
+            console.log('跳过自己发送的消息');
+            return;
+          }
+          
           setMessages(prev => [...prev, {
             id: Date.now().toString(),
             player_id: msgData.player_id,
