@@ -82,6 +82,7 @@ export default function GameRoom() {
         }
         // 处理玩家离开
         else if (eventType === 'player_leave') {
+          console.log('收到玩家离开事件:', data);
           setMessages(prev => [...prev, {
             id: Date.now().toString(),
             type: 'system',
@@ -354,10 +355,10 @@ export default function GameRoom() {
     if (typeof ts === 'string' && /^\d+$/.test(ts)) {
       date = new Date(parseInt(ts));
     }
-    // SQLite 格式：YYYY-MM-DD HH:MM:SS（视为 UTC 时间，需要转换为上海时区）
+    // SQLite 格式：YYYY-MM-DD HH:MM:SS（已经是上海时间，直接解析）
     else if (typeof ts === 'string' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(ts)) {
-      // 将 SQLite 时间视为 UTC，添加 Z 后缀
-      date = new Date(ts.replace(' ', 'T') + 'Z');
+      // 直接替换 T 让 JS 正确解析，不添加 Z（因为本身就是上海时间）
+      date = new Date(ts.replace(' ', 'T'));
     }
     // ISO 格式或其他
     else {
