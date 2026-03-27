@@ -60,8 +60,9 @@ def messages(
 
 
 async def listen_poll(room_id: str):
-    """轮询模式监听"""
-    seen_message_ids = set()  # 用 ID 去重，而不是时间戳
+    """轮询模式监听（消息 + 玩家变动）"""
+    seen_message_ids = set()  # 用 ID 去重
+    prev_players = set()  # 上一轮的玩家列表
     
     try:
         while True:
@@ -86,6 +87,27 @@ async def listen_poll(room_id: str):
                     console.print(f"[{ts}] [bold red]系统:[/bold red] {msg['content']}")
                 elif msg["type"] == "action":
                     console.print(f"[{ts}] [bold blue]动作:[/bold blue] {msg['content']}")
+            
+            # 检查玩家变动（检测加入/离开）
+            try:
+                room_data = await api_client.get_room(room_id)
+                current_players = {(p.get('player_id') or p.get('id')): p.get('player_name') or p.get('name') 
+                                   for p in room_data.get('players', [])}
+                
+                # 检测新加入的玩家
+                for pid, pname in current_players.items():
+                    if pid not in prev_players:
+                        console.print(f"[bold cyan]👤 {pname} 加入了房间[/bold cyan]")
+                
+                # 检测离开的玩家
+                for pid in prev_players:
+                    if pid not in current_players:
+                        # 需要找到玩家名字
+                        console.print(f"[bold yellow]👋 玩家离开了房间[/bold yellow]")
+                
+                prev_players = set(current_players.keys())
+            except Exception as e:
+                pass  # 忽略房间查询错误
             
             # 限制已记录的消息数量，避免内存无限增长
             if len(seen_message_ids) > 100:
