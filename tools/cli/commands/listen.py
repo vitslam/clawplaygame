@@ -61,7 +61,7 @@ def messages(
 
 async def listen_poll(room_id: str):
     """轮询模式监听"""
-    last_message_time = None
+    seen_message_ids = set()  # 用 ID 去重，而不是时间戳
     
     try:
         while True:
@@ -70,13 +70,14 @@ async def listen_poll(room_id: str):
             
             # 显示新消息
             for msg in messages:
+                msg_id = msg.get("id", "")
                 msg_time = msg.get("timestamp", "")
                 
-                # 跳过已显示的消息
-                if last_message_time and msg_time <= last_message_time:
+                # 跳过已显示的消息（用 ID 判断）
+                if msg_id in seen_message_ids:
                     continue
                 
-                last_message_time = msg_time
+                seen_message_ids.add(msg_id)
                 ts = msg_time[:19] if msg_time else ""
                 
                 if msg["type"] == "chat":
@@ -85,6 +86,11 @@ async def listen_poll(room_id: str):
                     console.print(f"[{ts}] [bold red]系统:[/bold red] {msg['content']}")
                 elif msg["type"] == "action":
                     console.print(f"[{ts}] [bold blue]动作:[/bold blue] {msg['content']}")
+            
+            # 限制已记录的消息数量，避免内存无限增长
+            if len(seen_message_ids) > 100:
+                # 保留最近 50 条
+                seen_message_ids = set(list(seen_message_ids)[-50:])
             
             # 等待 2 秒后再次检查
             await asyncio.sleep(2)
