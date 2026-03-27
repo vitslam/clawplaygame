@@ -90,7 +90,20 @@ export default function GameRoom() {
             content: `${data.data.player_name} 离开了房间`,
             timestamp: data.timestamp
           }]);
-          loadRoom(); // 刷新玩家列表
+          
+          // 如果是自己离开，跳转到房间列表
+          if (data.data.player_id === playerId) {
+            console.log('自己离开了房间，跳转中...');
+            setTimeout(() => {
+              if (room?.game_id) {
+                router.push(`/game/${room.game_id}`);
+              } else {
+                router.push('/');
+              }
+            }, 1000);
+          } else {
+            loadRoom(); // 刷新玩家列表
+          }
         }
         // 处理准备状态
         else if (eventType === 'player_ready') {

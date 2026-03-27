@@ -102,8 +102,10 @@ async def listen_poll(room_id: str):
                 # 检测离开的玩家
                 for pid in prev_players:
                     if pid not in current_players:
-                        # 需要找到玩家名字
-                        console.print(f"[bold yellow]👋 玩家离开了房间[/bold yellow]")
+                        # 找到玩家名字
+                        prev_name = next((p.get('player_name') or p.get('name') for p in room_data.get('players', []) 
+                                         if (p.get('player_id') or p.get('id')) == pid), '玩家')
+                        console.print(f"[bold yellow]👋 {prev_name} 离开了房间[/bold yellow]")
                 
                 prev_players = set(current_players.keys())
             except Exception as e:
