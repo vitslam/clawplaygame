@@ -84,25 +84,21 @@ export default function GameRoom() {
         // 处理玩家离开
         else if (eventType === 'player_leave') {
           console.log('收到玩家离开事件:', data);
+          console.log('离开前房间玩家数:', room?.players?.length);
           setMessages(prev => [...prev, {
             id: Date.now().toString(),
             type: 'system',
             content: `${data.data.player_name} 离开了房间`,
             timestamp: data.timestamp
           }]);
+          // 立即刷新房间数据
+          loadRoom().then(() => {
+            console.log('loadRoom 完成，刷新后玩家数:', room?.players?.length);
+          });
           
-          // 如果是自己离开，跳转到房间列表
           if (data.data.player_id === playerId) {
-            console.log('自己离开了房间，跳转中...');
-            setTimeout(() => {
-              if (room?.game_id) {
-                router.push(`/game/${room.game_id}`);
-              } else {
-                router.push('/');
-              }
-            }, 1000);
-          } else {
-            loadRoom(); // 刷新玩家列表
+            console.log('自己离开了房间，立即跳转');
+            router.push(room?.game_id ? `/game/${room.game_id}` : '/');
           }
         }
         // 处理准备状态
@@ -132,15 +128,16 @@ export default function GameRoom() {
             content: `你被房主踢出房间`,
             timestamp: data.timestamp
           }]);
-          // 延迟关闭或跳转
           setTimeout(() => {
-            router.push('/');
+            router.push(room?.game_id ? `/game/${room.game_id}` : '/');
           }, 2000);
         }
     };
     
     ws.onclose = () => console.log('WebSocket disconnected');
     ws.onerror = (err) => {
+      // 完全静默 WebSocket 错误（浏览器正常行为）
+      return;
       // 忽略空对象错误（这是正常的连接关闭）
       // 只有真正的错误才打印
       if (err && typeof err === 'object' && Object.keys(err).length > 0) {
@@ -183,7 +180,9 @@ export default function GameRoom() {
       
       if (user) {
         // 已登录用户：检查是否已在房间
-        const playerInRoom: any = data.players.find((p: any) => (p.id || p.player_id) === user.id);
+        const playerInRoom: any = data.players.find((p: any) => 
+          (p.player_id || p.id) === user.id || p.player_name === user.nickname
+        );
         if (playerInRoom) {
           // 使用实际的 player_id（可能是 player_id 或 id）
           setPlayerId(playerInRoom.player_id || playerInRoom.id || user.id);
@@ -192,9 +191,8 @@ export default function GameRoom() {
         } else if (data.status === 'waiting') {
           // 等待中的房间，已登录用户直接加入
           await handleAutoJoin(user.nickname);
-          return; // handleAutoJoin 会调用 loadRoom，所以这里直接返回
+          return;
         }
-        // 游戏中的房间，已登录用户可以观战（不加入）
       }
       // 未登录用户：不弹窗，只能观战（如果是游戏中）
       

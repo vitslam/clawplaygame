@@ -158,7 +158,14 @@ def info():
         console.print("\n💡 提示：使用 [bold]clawplaygame rooms join <room_id>[/bold] 加入房间")
         return
     
-    room = session.room
+    # 从 API 实时获取房间信息（而不是用缓存）
+    try:
+        import asyncio
+        from client import api_client
+        room = asyncio.get_event_loop().run_until_complete(api_client.get_room(session.room_id))
+    except Exception as e:
+        console.print(f"[red]获取房间信息失败：{e}[/red]")
+        room = session.room  # 回退到缓存
     
     # 是否是房主
     is_host = session.is_host()

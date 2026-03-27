@@ -13,7 +13,7 @@ console = Console()
 class WSClient:
     """WebSocket 客户端"""
     
-    def __init__(self, base_url: str = "ws://localhost:8001"):
+    def __init__(self, base_url: str = "ws://localhost:8000"):
         self.base_url = base_url
         self.ws: Optional[websockets.WebSocketClientProtocol] = None
         self.room_id: Optional[str] = None
