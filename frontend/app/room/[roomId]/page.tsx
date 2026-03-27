@@ -128,10 +128,9 @@ export default function GameRoom() {
     
     ws.onclose = () => console.log('WebSocket disconnected');
     ws.onerror = (err) => {
-      // 忽略正常的连接关闭错误
-      if (err && typeof err === 'object' && 'code' in err) {
-        console.log('WebSocket closed:', err);
-      } else {
+      // 忽略空对象错误（这是正常的连接关闭）
+      // 只有真正的错误才打印
+      if (err && typeof err === 'object' && Object.keys(err).length > 0) {
         console.error('WebSocket error:', err);
       }
     };
