@@ -41,7 +41,9 @@ def messages(
             border_style="green"
         ))
         
-        asyncio.run(listen_ws(room_id))
+        # Python 3.6 兼容
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(listen_ws(room_id))
     else:
         # 轮询模式（向后兼容）
         console.print(Panel(
@@ -52,7 +54,9 @@ def messages(
             border_style="blue"
         ))
         
-        asyncio.run(listen_poll(room_id))
+        # Python 3.6 兼容
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(listen_poll(room_id))
 
 
 async def listen_poll(room_id: str):
@@ -85,7 +89,7 @@ async def listen_poll(room_id: str):
             # 等待 2 秒后再次检查
             await asyncio.sleep(2)
     
-    except asyncio.CancelledError:
+    except KeyboardInterrupt:
         pass
 
 
@@ -132,7 +136,7 @@ async def listen_ws(room_id: str):
     # 开始监听
     try:
         await ws.listen()
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, asyncio.CancelledError):
         console.print("\n[yellow]✓ 已停止监听[/yellow]")
     finally:
         await ws.disconnect()
