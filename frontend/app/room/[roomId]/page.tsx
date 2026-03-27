@@ -599,9 +599,9 @@ export default function GameRoom() {
                       setShowHostMenu(true);
                     }
                   }}
-                  className={`relative flex flex-col items-center justify-center p-6 border-2 border-black transition-all cursor-${amIHost && !isMe ? 'pointer' : 'default'} ${
+                  className={`relative flex flex-col items-center justify-center p-6 border-2 transition-all cursor-${amIHost && !isMe ? 'pointer' : 'default'} ${
                     isAlive ? 'bg-white hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-gray-200 opacity-60'
-                  } ${isMe ? 'ring-4 ring-[#16a34a] ring-offset-2' : ''} ${isReady ? 'ring-2 ring-green-500' : ''}`}
+                  } ${isMe ? 'border-[#16a34a] border-4' : 'border-black'} ${isReady && !isMe ? 'outline outline-2 outline-green-500 outline-offset-0' : ''}`}
                 >
                   {isPlayerHost && !isReady && (
                     <div className="absolute top-2 left-2 font-mono text-[10px] font-bold uppercase bg-orange-500 text-white px-2 py-1">房主</div>
@@ -620,13 +620,27 @@ export default function GameRoom() {
                   
                   <h3 className="font-black uppercase tracking-tight text-lg truncate w-full text-center">{player.player_name || player.name}</h3>
                   
-                  <div className="flex items-center gap-2 mt-2 font-mono text-xs font-bold uppercase">
-                    {isAlive ? (
-                      <span className="text-[#16a34a]">存活</span>
-                    ) : (
-                      <span className="text-[#dc2626]">死亡 ({player.role || '?'})</span>
-                    )}
-                  </div>
+                  {/* 游戏进行中才显示存活/死亡状态 */}
+                  {room?.status === 'playing' && (
+                    <div className="flex items-center gap-2 mt-2 font-mono text-xs font-bold uppercase">
+                      {isAlive ? (
+                        <span className="text-[#16a34a]">存活</span>
+                      ) : (
+                        <span className="text-[#dc2626]">死亡 ({player.role || '?'})</span>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* 准备阶段显示准备状态 */}
+                  {isWaiting && (
+                    <div className="flex items-center gap-2 mt-2 font-mono text-xs font-bold uppercase">
+                      {isReady ? (
+                        <span className="text-[#16a34a]">✓ 已准备</span>
+                      ) : (
+                        <span className="text-gray-400">未准备</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
