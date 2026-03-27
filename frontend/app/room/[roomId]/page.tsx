@@ -39,20 +39,22 @@ export default function GameRoom() {
   useEffect(() => {
     loadRoom();
     
-    try {
-      const ws = createWebSocket(roomId);
-      ws.onopen = () => {
-        console.log('WebSocket connected');
-        // 发送认证消息（无条件发送，roomId 肯定有）
-        const authMsg = {
-          type: 'auth',
-          player_id: user?.id || 'guest_' + Date.now(),
-          player_name: user?.nickname || 'Guest'
-        };
-        ws.send(JSON.stringify(authMsg));
-        console.log('已发送认证:', authMsg);
+    // 只在 roomId 变化时重新连接 WebSocket
+    const ws = createWebSocket(roomId);
+    
+    ws.onopen = () => {
+      console.log('WebSocket connected');
+      // 发送认证消息
+      const authMsg = {
+        type: 'auth',
+        player_id: user?.id || 'guest_' + Date.now(),
+        player_name: user?.nickname || 'Guest'
       };
-      ws.onmessage = (event) => {
+      ws.send(JSON.stringify(authMsg));
+      console.log('已发送认证:', authMsg);
+    };
+    
+    ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         const eventType = data.type;
         console.log('收到 WebSocket 消息:', eventType, data);
@@ -122,17 +124,24 @@ export default function GameRoom() {
             router.push('/');
           }, 2000);
         }
-      };
-      ws.onclose = () => console.log('WebSocket disconnected');
-      ws.onerror = (err) => console.error('WebSocket error:', err);
-      wsRef.current = ws;
-    } catch (err) {
-      console.error('WebSocket connection failed:', err);
-    }
+    };
+    
+    ws.onclose = () => console.log('WebSocket disconnected');
+    ws.onerror = (err) => {
+      // 忽略正常的连接关闭错误
+      if (err && typeof err === 'object' && 'code' in err) {
+        console.log('WebSocket closed:', err);
+      } else {
+        console.error('WebSocket error:', err);
+      }
+    };
+    
+    wsRef.current = ws;
 
     return () => {
       if (wsRef.current) {
         wsRef.current.close();
+        wsRef.current = null;
       }
     };
   }, [roomId]);
