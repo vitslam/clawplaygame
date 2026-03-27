@@ -1,5 +1,5 @@
 """
-房间管理 API - 接口声明层
+房间管理 API - 集成 WebSocket 广播
 """
 from fastapi import APIRouter, HTTPException
 from typing import List, Optional
@@ -205,6 +205,8 @@ async def get_room(room_id: str):
 async def join_room(room_id: str, request: JoinRoomRequest):
     """加入游戏房间"""
     from app import db
+    from app.main import ws_manager
+    from app.websocket.manager import EventType
     
     player_id = request.player_id or str(uuid.uuid4())[:12]
     db.create_or_update_user(player_id, request.player_name)
@@ -218,6 +220,13 @@ async def join_room(room_id: str, request: JoinRoomRequest):
             raise ValueError("房间已满")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
+    # WebSocket 广播：新玩家加入
+    await ws_manager.broadcast_event(
+        room_id,
+        EventType.PLAYER_JOIN,
+        {"player_id": player_id, "player_name": request.player_name}
+    )
     
     room_data = RoomService.get_room(room_id)
     room_data["players"] = db.get_room_players(room_id)
@@ -236,6 +245,8 @@ async def join_room(room_id: str, request: JoinRoomRequest):
 async def send_message(room_id: str, request: MessageRequest):
     """发送房间消息"""
     from app import db
+    from app.main import ws_manager
+    from app.websocket.manager import EventType
     
     room = db.get_room(room_id)
     if not room:
@@ -245,6 +256,17 @@ async def send_message(room_id: str, request: MessageRequest):
     player_name = next((p["player_name"] for p in players if p["player_id"] == request.player_id), "Unknown")
     
     db.add_message(room_id, request.content, request.message_type, request.player_id, player_name)
+    
+    # WebSocket 广播：新消息
+    await ws_manager.broadcast_event(
+        room_id,
+        EventType.CHAT,
+        {
+            "player_id": request.player_id,
+            "player_name": player_name,
+            "content": request.content
+        }
+    )
     
     return {"success": True}
 
@@ -277,13 +299,23 @@ async def get_messages(room_id: str, limit: int = 50):
 @router.post("/{room_id}/toggle-ready")
 async def toggle_ready(room_id: str, request: ToggleReadyRequest):
     """切换玩家准备状态"""
+    from app.main import ws_manager
+    from app.websocket.manager import EventType
+    
     try:
         is_ready = RoomService.toggle_ready(room_id, request.player_id)
         
-        # 获取更新后的玩家信息
         from app import db
         players = db.get_room_players(room_id)
         player = next((p for p in players if p["player_id"] == request.player_id), None)
+        
+        # WebSocket 广播：准备状态变更
+        event_type = EventType.PLAYER_READY if is_ready else EventType.PLAYER_NOT_READY
+        await ws_manager.broadcast_event(
+            room_id,
+            event_type,
+            {"player_id": request.player_id, "player_name": player["player_name"] if player else "Unknown"}
+        )
         
         return {
             "success": True,
@@ -298,18 +330,30 @@ async def toggle_ready(room_id: str, request: ToggleReadyRequest):
 async def leave_room(room_id: str, player_id: str):
     """玩家离开房间"""
     from app import db
+    from app.main import ws_manager
+    from app.websocket.manager import EventType
     
     room = db.get_room(room_id)
     if not room:
         raise HTTPException(status_code=404, detail="房间不存在")
     
+    # 获取玩家信息（踢之前）
+    player = next((p for p in db.get_room_players(room_id) if p["player_id"] == player_id), None)
+    player_name = player["player_name"] if player else "Unknown"
+    
     # 从房间移除玩家
     db.kick_player(room_id, player_id)
     
     # 添加系统消息
-    player = next((p for p in db.get_room_players(room_id) if p["player_id"] == player_id), None)
     if player:
-        db.add_message(room_id, f"{player['player_name']} 离开了房间", "system")
+        db.add_message(room_id, f"{player_name} 离开了房间", "system")
+    
+    # WebSocket 广播：玩家离开
+    await ws_manager.broadcast_event(
+        room_id,
+        EventType.PLAYER_LEAVE,
+        {"player_id": player_id, "player_name": player_name}
+    )
     
     return {"success": True}
 
@@ -317,8 +361,24 @@ async def leave_room(room_id: str, player_id: str):
 @router.post("/{room_id}/kick")
 async def kick_player(room_id: str, request: KickPlayerRequest, host_id: str = None):
     """房主踢出玩家"""
+    from app import db
+    from app.main import ws_manager
+    from app.websocket.manager import EventType
+    
     try:
+        # 获取被踢玩家信息
+        player = next((p for p in db.get_room_players(room_id) if p["player_id"] == request.player_id), None)
+        player_name = player["player_name"] if player else "Unknown"
+        
         RoomService.kick_player(room_id, host_id, request.player_id)
+        
+        # WebSocket 广播：被踢出
+        await ws_manager.broadcast_event(
+            room_id,
+            EventType.KICKED,
+            {"player_id": request.player_id, "player_name": player_name, "kicked_by": host_id}
+        )
+        
         return {"success": True}
     except ValueError as e:
         raise HTTPException(status_code=400 if "房主" not in str(e) else 403, detail=str(e))

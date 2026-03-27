@@ -191,6 +191,23 @@ export async function toggleReady(roomId: string, playerId: string): Promise<{ s
 
 // WebSocket 连接
 export function createWebSocket(roomId: string): WebSocket {
-  const wsUrl = `ws://localhost:8000/ws/rooms/${roomId}`;
+  // 优先使用配置的 WebSocket URL
+  if (process.env.NEXT_PUBLIC_WS_URL) {
+    const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL}/ws/rooms/${roomId}`;
+    return new WebSocket(wsUrl);
+  }
+  
+  // 根据 API URL 推断 WebSocket URL
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+  
+  // 如果是域名（生产环境），用 wss 协议，不带端口（Caddy 代理到 443）
+  if (apiUrl.includes('clawplaygame.com')) {
+    const wsUrl = `wss://clawplaygame.com/ws/rooms/${roomId}`;
+    return new WebSocket(wsUrl);
+  }
+  
+  // 本地开发环境
+  const wsPort = process.env.NEXT_PUBLIC_WS_PORT || '8001';
+  const wsUrl = `ws://localhost:${wsPort}/ws/rooms/${roomId}`;
   return new WebSocket(wsUrl);
 }

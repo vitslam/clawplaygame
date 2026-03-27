@@ -41,22 +41,90 @@ export default function GameRoom() {
     
     try {
       const ws = createWebSocket(roomId);
-      ws.onopen = () => console.log('WebSocket connected');
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+        // 发送认证消息（无条件发送，roomId 肯定有）
+        const authMsg = {
+          type: 'auth',
+          player_id: user?.id || 'guest_' + Date.now(),
+          player_name: user?.nickname || 'Guest'
+        };
+        ws.send(JSON.stringify(authMsg));
+        console.log('已发送认证:', authMsg);
+      };
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.type === 'message') {
-          setMessages(prev => [...prev, data.data]);
-        } else if (data.type === 'player_joined' || data.type === 'player_left') {
+        const eventType = data.type;
+        console.log('收到 WebSocket 消息:', eventType, data);
+        
+        // 处理聊天消息
+        if (eventType === 'chat') {
+          console.log('处理聊天消息:', data.data);
+          const msgData = data.data;
+          setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            player_id: msgData.player_id,
+            player_name: msgData.player_name,
+            type: 'chat',
+            content: msgData.content,
+            timestamp: data.timestamp
+          }]);
+        }
+        // 处理玩家加入
+        else if (eventType === 'player_join') {
           setMessages(prev => [...prev, {
             id: Date.now().toString(),
             type: 'system',
-            content: data.type === 'player_joined' ? '玩家加入' : '玩家离开',
+            content: `${data.data.player_name} 加入了房间`,
+            timestamp: data.timestamp
+          }]);
+          loadRoom(); // 刷新玩家列表
+        }
+        // 处理玩家离开
+        else if (eventType === 'player_leave') {
+          setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            type: 'system',
+            content: `${data.data.player_name} 离开了房间`,
+            timestamp: data.timestamp
+          }]);
+          loadRoom(); // 刷新玩家列表
+        }
+        // 处理准备状态
+        else if (eventType === 'player_ready') {
+          setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            type: 'system',
+            content: `${data.data.player_name} 已准备`,
             timestamp: data.timestamp
           }]);
           loadRoom();
         }
+        else if (eventType === 'player_not_ready') {
+          setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            type: 'system',
+            content: `${data.data.player_name} 取消准备`,
+            timestamp: data.timestamp
+          }]);
+          loadRoom();
+        }
+        // 处理被踢出
+        else if (eventType === 'kicked') {
+          setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            type: 'system',
+            content: `你被房主踢出房间`,
+            timestamp: data.timestamp
+          }]);
+          // 延迟关闭或跳转
+          setTimeout(() => {
+            router.push('/');
+          }, 2000);
+        }
       };
       ws.onclose = () => console.log('WebSocket disconnected');
+      ws.onerror = (err) => console.error('WebSocket error:', err);
       wsRef.current = ws;
     } catch (err) {
       console.error('WebSocket connection failed:', err);
