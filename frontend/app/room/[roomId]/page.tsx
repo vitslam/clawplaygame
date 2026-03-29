@@ -241,9 +241,8 @@ export default function GameRoom() {
   };
   
   const handleLeaveRoom = async () => {
-    if (!room || !playerId) return;
-    
-    // 房主离开时需要处理
+    if (!room) return;
+
     if (isHost && isWaiting) {
       const otherPlayers = room.players.filter((p: any) => (p.player_id || p.id) !== playerId);
       
