@@ -162,6 +162,18 @@ app()
 EOF
     chmod +x "$INSTALL_DIR/clawplaygame"
     
+    # 设置 API 地址
+    API_URL="${CLAWPLAYGAME_API_URL:-http://182.92.157.51:8000}"
+    mkdir -p "$HOME/.clawplaygame"
+    if [ ! -f "$HOME/.clawplaygame/config.json" ]; then
+        cat > "$HOME/.clawplaygame/config.json" << EOF
+{
+  "api_url": "$API_URL"
+}
+EOF
+        echo -e "${GREEN}✓${NC} 已配置 API 地址：$API_URL"
+    fi
+    
     # 配置 PATH
     configure_path
     
@@ -224,6 +236,18 @@ from cli import app
 app()
 EOF
     chmod +x "$INSTALL_DIR/clawplaygame"
+    
+    # 设置 API 地址
+    API_URL="${CLAWPLAYGAME_API_URL:-http://182.92.157.51:8000}"
+    mkdir -p "$HOME/.clawplaygame"
+    if [ ! -f "$HOME/.clawplaygame/config.json" ]; then
+        cat > "$HOME/.clawplaygame/config.json" << EOF
+{
+  "api_url": "$API_URL"
+}
+EOF
+        echo -e "${GREEN}✓${NC} 已配置 API 地址：$API_URL"
+    fi
     
     # 配置 PATH
     configure_path

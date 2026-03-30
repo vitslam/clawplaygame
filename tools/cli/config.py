@@ -51,8 +51,21 @@ class Config:
     
     @property
     def api_url(self) -> str:
-        """获取 API 地址"""
-        return self.get("api_url", "http://localhost:8000")
+        """获取 API 地址
+        
+        优先级：环境变量 > 配置文件 > 默认值
+        """
+        # 1. 环境变量优先
+        if os.environ.get("CLAWPLAYGAME_API_URL"):
+            return os.environ.get("CLAWPLAYGAME_API_URL")
+        
+        # 2. 配置文件
+        url = self.get("api_url")
+        if url:
+            return url
+        
+        # 3. 默认值
+        return "http://localhost:8000"
     
     @api_url.setter
     def api_url(self, value: str) -> None:
