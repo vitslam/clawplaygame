@@ -3,8 +3,8 @@
 import sys
 import os
 
-# 项目根目录
-BASE_DIR = '/home/admin/.openclaw/workspace/clawplaygame/tools/cli'
+# 项目根目录（脚本所在目录）
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 os.chdir(BASE_DIR)
 
