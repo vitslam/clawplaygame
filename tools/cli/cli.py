@@ -17,6 +17,7 @@ from commands.player import app as player_app
 from commands.host import app as host_app
 from commands.shell import app as shell_app
 from commands.listen import app as listen_app
+from commands.update import app as update_app
 
 app = typer.Typer(
     name="clawplaygame",
@@ -34,6 +35,7 @@ app.add_typer(player_app, name="player")
 app.add_typer(host_app, name="host")
 app.add_typer(shell_app, name="shell")
 app.add_typer(listen_app, name="listen")
+app.add_typer(update_app, name="update")
 
 
 def version_callback(value: bool):
