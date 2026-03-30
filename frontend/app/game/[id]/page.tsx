@@ -40,6 +40,7 @@ export default function RoomList() {
   // 创建房间表单状态
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showBrowserModal, setShowBrowserModal] = useState(false);
   const [roomName, setRoomName] = useState('');
   const [maxPlayers, setMaxPlayers] = useState(10);
   const [isPublic, setIsPublic] = useState(true);
@@ -89,14 +90,7 @@ export default function RoomList() {
   };
 
   const openCreateModal = () => {
-    if (!user) {
-      setShowLoginModal(true);
-      return;
-    }
-    setRoomName(`${user.nickname} 的房间`);
-    setMaxPlayers(10);
-    setIsPublic(true);
-    setShowCreateModal(true);
+    setShowBrowserModal(true);
   };
 
   if (loading) {
@@ -282,6 +276,31 @@ export default function RoomList() {
                   创建
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 浏览器用户提示弹窗 */}
+      {showBrowserModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white border-2 border-black p-8 max-w-md w-full shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <div className="text-center">
+              <div className="text-6xl mb-4">🎮</div>
+              <h2 className="text-2xl font-black uppercase mb-4">浏览器仅支持观战</h2>
+              <p className="font-mono text-sm text-gray-600 mb-6">
+                游戏功能仅支持通过 CLI 工具访问。请使用 <span className="font-bold">clawplaygame</span> 命令行工具加入或创建房间。
+              </p>
+              <div className="bg-gray-100 border-2 border-black p-4 mb-6 text-left">
+                <p className="font-mono text-xs mb-2">快速开始：</p>
+                <code className="font-mono text-xs text-blue-600">npx clawplaygame join --room [房间号]</code>
+              </div>
+              <button
+                onClick={() => setShowBrowserModal(false)}
+                className="w-full bg-black text-white px-6 py-3 border-2 border-black font-bold uppercase hover:bg-white hover:text-black transition-all"
+              >
+                知道了
+              </button>
             </div>
           </div>
         </div>

@@ -6,7 +6,7 @@ import Navbar from '@/components/Navbar';
 import { useParams, useRouter } from 'next/navigation';
 import { Send, Users, Shield, Sword, Eye, Volume2, MicOff, Play, LogOut, Loader2 } from 'lucide-react';
 import { useUser } from '@/lib/UserContext';
-import { getRoom, joinRoom, getMessages, sendMessage, createWebSocket, type Room as RoomType, type Message } from '@/lib/api';
+import { getRoom, getMessages, sendMessage, createWebSocket, type Room as RoomType, type Message } from '@/lib/api';
 
 export default function GameRoom() {
   const params = useParams();
@@ -20,10 +20,7 @@ export default function GameRoom() {
   const [playerId, setPlayerId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  const [showJoinModal, setShowJoinModal] = useState(false);
-  const [nickname, setNickname] = useState('');
-  
+
   // 房主功能状态
   const [showHostMenu, setShowHostMenu] = useState(false); // 房主菜单
   const [selectedPlayer, setSelectedPlayer] = useState<any>(null); // 选中的玩家
@@ -177,25 +174,17 @@ export default function GameRoom() {
       setRoom(data);
       const msgData = await getMessages(roomId);
       setMessages(msgData.messages);
-      
+
       if (user) {
-        // 已登录用户：检查是否已在房间
-        const playerInRoom: any = data.players.find((p: any) => 
+        const playerInRoom: any = data.players.find((p: any) =>
           (p.player_id || p.id) === user.id || p.player_name === user.nickname
         );
         if (playerInRoom) {
-          // 使用实际的 player_id（可能是 player_id 或 id）
           setPlayerId(playerInRoom.player_id || playerInRoom.id || user.id);
-          // 读取准备状态
           setMyReady(!!playerInRoom.is_ready);
-        } else if (data.status === 'waiting') {
-          // 等待中的房间，已登录用户直接加入
-          await handleAutoJoin(user.nickname);
-          return;
         }
       }
-      // 未登录用户：不弹窗，只能观战（如果是游戏中）
-      
+
       setLoading(false);
     } catch (err) {
       setError((err as Error).message);
@@ -203,43 +192,6 @@ export default function GameRoom() {
     }
   };
 
-  // 自动加入（已登录用户）
-  const handleAutoJoin = async (nickname: string) => {
-    try {
-      const { joinRoom } = await import('@/lib/api');
-      const result = await joinRoom(roomId, nickname, user?.id);
-      const newUser = { id: result.player.id || result.player.player_id || user?.id || '', nickname };
-      setUser(newUser);
-      setPlayerId(result.player.id || result.player.player_id || user?.id || '');
-      setRoom(result.room);
-      // 不调用 loadRoom，避免无限循环
-      setLoading(false);
-    } catch (err) {
-      alert('加入房间失败：' + (err as Error).message);
-      setLoading(false);
-    }
-  };
-
-  // 手动加入（弹窗）
-  const handleJoin = async () => {
-    if (!nickname.trim()) {
-      alert('请输入昵称');
-      return;
-    }
-    try {
-      const { joinRoom } = await import('@/lib/api');
-      const result = await joinRoom(roomId, nickname);
-      const newUser = { id: result.player.id || result.player.player_id || '', nickname };
-      setUser(newUser);
-      setPlayerId(result.player.id || result.player.player_id || '');
-      setRoom(result.room);
-      setShowJoinModal(false);
-      loadRoom();
-    } catch (err) {
-      alert('加入房间失败：' + (err as Error).message);
-    }
-  };
-  
   const handleLeaveRoom = async () => {
     if (!room) return;
 
@@ -411,63 +363,9 @@ export default function GameRoom() {
 
   const isPlayingAndPublic = room?.status === 'playing' && room?.is_public;
   const isWaiting = room?.status === 'waiting';
+  const isWatchOnly = !playerId;
   const me = room?.players.find((p: any) => (p.player_id || p.id) === playerId);
   const isHost = room && playerId && room.host_id === playerId;
-
-  if (showJoinModal) {
-    // 未登录用户不能加入，直接显示观战提示
-    if (!user) {
-      return (
-        <div className="flex flex-col h-screen bg-[#f4f4f4]">
-          <Navbar />
-          <main className="flex-1 flex items-center justify-center p-4">
-            <div className="max-w-md w-full bg-white border-2 border-black p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-center">
-              <h2 className="text-2xl font-black uppercase mb-4">需要登录</h2>
-              <p className="text-gray-600 mb-6">登录后才能加入房间，当前只能观战。</p>
-              <button onClick={() => setShowJoinModal(false)} className="bg-black text-white px-6 py-3 border-2 border-black font-bold uppercase hover:bg-white hover:text-black">
-                继续观战
-              </button>
-            </div>
-          </main>
-        </div>
-      );
-    }
-    
-    // 已登录用户显示加入弹窗
-    return (
-      <div className="flex flex-col h-screen bg-[#f4f4f4]">
-        <Navbar />
-        <main className="flex-1 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white border-2 border-black p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-            <h2 className="text-3xl font-black uppercase mb-6 text-center">
-              {room?.status === 'playing' ? '加入观战' : '加入房间'}
-            </h2>
-            <p className="font-mono text-sm mb-6 text-center">房间 #{roomId}</p>
-            <div className="space-y-4">
-              <div>
-                <label className="block font-bold uppercase mb-2 text-sm">你的昵称</label>
-                <input
-                  type="text"
-                  value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
-                  placeholder="输入昵称"
-                  className="w-full border-2 border-black px-4 py-3 font-mono focus:outline-none focus:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                />
-              </div>
-              <div className="flex gap-3">
-                <button onClick={() => setShowJoinModal(false)} className="flex-1 bg-gray-200 text-black px-6 py-3 border-2 border-black font-bold uppercase hover:bg-gray-300">
-                  取消
-                </button>
-                <button onClick={handleJoin} className="flex-1 bg-black text-white px-6 py-3 border-2 border-black font-bold uppercase hover:bg-white hover:text-black">
-                  {room?.status === 'playing' ? '开始观战' : '加入游戏'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col h-screen bg-[#f4f4f4] text-black">
@@ -687,7 +585,7 @@ export default function GameRoom() {
           )}
           
           {/* 准备状态和开始游戏区域 */}
-          {isWaiting && (
+          {isWaiting && playerId && (
             <div className="mt-auto border-2 border-black bg-white p-6">
               {isHost ? (
                 <>
@@ -792,7 +690,7 @@ export default function GameRoom() {
               </form>
             </div>
           )}
-          {!playerId && isPlayingAndPublic && (
+          {!playerId && (isPlayingAndPublic || isWaiting) && (
             <div className="border-t-2 border-black p-4 bg-gray-100 text-center text-sm font-bold text-gray-600 uppercase">
               👁️ 观战模式 - 无法发言
             </div>
