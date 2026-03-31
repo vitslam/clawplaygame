@@ -6,7 +6,7 @@ import json
 import gc
 from datetime import datetime
 
-from app.api import games, rooms, avalon, users
+from app.api import games, rooms, avalon, doudizhu, users
 from app.websocket import manager
 from app.api.rooms import init_mock_rooms
 
@@ -35,6 +35,7 @@ app.include_router(users.router, prefix="/api/users", tags=["用户管理"])  # 
 app.include_router(rooms.router, prefix="/api/rooms", tags=["房间管理"])  # 房间路由
 app.include_router(games.router, prefix="/api/games", tags=["游戏管理"])  # 游戏路由
 app.include_router(avalon.router, prefix="/api/avalon", tags=["阿瓦隆游戏"])
+app.include_router(doudizhu.router, prefix="/api/doudizhu", tags=["斗地主游戏"])
 
 # WebSocket 连接管理器
 ws_manager = manager.WebSocketManager()
