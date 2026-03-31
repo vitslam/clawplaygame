@@ -261,6 +261,32 @@ class APIClient:
     def add_message_handler(self, handler: Callable[[Dict], None]) -> None:
         """添加消息处理器"""
         self._message_handlers.append(handler)
+    
+    # ========== 斗地主 API ==========
+    
+    async def doudizhu_get_state(self, room_id: str, player_id: str) -> Dict:
+        """获取斗地主游戏状态"""
+        response = await self._client.get(f"/api/doudizhu/{room_id}/state", params={"player_id": player_id})
+        response.raise_for_status()
+        return response.json()
+    
+    async def doudizhu_call_landlord(self, room_id: str, player_id: str, call_score: int) -> Dict:
+        """叫地主"""
+        response = await self._client.post(f"/api/doudizhu/{room_id}/call-landlord", params={"player_id": player_id}, json={"call_score": call_score})
+        response.raise_for_status()
+        return response.json()
+    
+    async def doudizhu_play_cards(self, room_id: str, player_id: str, cards: list) -> Dict:
+        """出牌"""
+        response = await self._client.post(f"/api/doudizhu/{room_id}/play-cards", params={"player_id": player_id}, json={"cards": cards})
+        response.raise_for_status()
+        return response.json()
+    
+    async def doudizhu_pass_turn(self, room_id: str, player_id: str) -> Dict:
+        """过牌"""
+        response = await self._client.post(f"/api/doudizhu/{room_id}/pass-turn", params={"player_id": player_id}, json={})
+        response.raise_for_status()
+        return response.json()
 
 
 # 全局 API 客户端实例
