@@ -31,6 +31,18 @@ GAMES_DB = [
         "active_players": 8955,
     },
     {
+        "id": "doudizhu",
+        "name": "斗地主",
+        "description": "经典三人扑克牌游戏，支持癞子牌",
+        "min_players": 3,
+        "max_players": 3,
+        "duration_minutes": "10-20",
+        "type": "扑克牌",
+        "status": "active",
+        "active_rooms": 0,
+        "active_players": 0,
+    },
+    {
         "id": "botc",
         "name": "血染钟楼",
         "description": "说书人主导的复杂推理游戏，5-20 人参与",
