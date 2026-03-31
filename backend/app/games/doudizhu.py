@@ -270,6 +270,13 @@ class DouDizhuGame:
             return self._finish_landlord_selection()
         else:
             self.current_player_index = (self.current_player_index + 1) % 3
+            # 广播叫地主事件
+            self._emit_event("landlord_called", {
+                "player_id": player_id,
+                "player_name": player.name,
+                "score": call_score,
+                "current_player": self.players[self.current_player_index].id
+            })
             return {
                 "success": True,
                 "current_player": self.players[self.current_player_index].id,
