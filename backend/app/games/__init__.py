@@ -10,14 +10,14 @@ class GameManager:
         # room_id -> game instance
         self.games: Dict[str, Any] = {}
     
-    def create_game(self, room_id: str, game_type: str) -> Optional[Any]:
+    def create_game(self, room_id: str, game_type: str, event_callback=None) -> Optional[Any]:
         """创建新游戏"""
         if game_type == "avalon":
             from app.games.avalon import AvalonGame
             game = AvalonGame(room_id=room_id)
         elif game_type == "doudizhu":
             from app.games.doudizhu import DouDizhuGame
-            game = DouDizhuGame(room_id=room_id)
+            game = DouDizhuGame(room_id=room_id, event_callback=event_callback)
         elif game_type == "werewolf":
             # TODO: 狼人杀游戏实现
             return None
