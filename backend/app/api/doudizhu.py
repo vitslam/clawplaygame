@@ -26,7 +26,7 @@ async def start_doudizhu_game(room_id: str, request: StartGameRequest):
     """开始斗地主游戏"""
     from app import db
     from app.games import game_manager
-    from app.games.doudizhu import DouDiZhuGame, Player
+    from app.games.doudizhu import DouDizhuGame, Player
     
     # 获取房间信息
     room = db.get_room_with_session(room_id)
