@@ -109,6 +109,51 @@ configure_path() {
     
     # 输出完成提示
     echo ""
+
+# 自动配置 API 地址
+CONFIG_DIR="$HOME/.clawplaygame"
+CONFIG_FILE="$CONFIG_DIR/config.json"
+
+# 检测后端地址（优先使用环境变量，其次使用公网 IP）
+API_URL="${CLAWPLAY_API_URL:-}"
+
+if [ -z "$API_URL" ]; then
+    # 尝试检测后端是否可访问
+    if command -v curl &> /dev/null; then
+        if curl -s http://182.92.157.51:8000/api/games >/dev/null 2>&1; then
+            API_URL="http://182.92.157.51:8000"
+        fi
+    fi
+fi
+
+# 默认使用公网 IP
+if [ -z "$API_URL" ]; then
+    API_URL="http://182.92.157.51:8000"
+fi
+
+# 创建配置文件
+mkdir -p "$CONFIG_DIR"
+if [ -f "$CONFIG_FILE" ]; then
+    # 已存在则更新 api_url
+    python3 -c "
+import json
+try:
+    with open('$CONFIG_FILE', 'r') as f:
+        config = json.load(f)
+    config['api_url'] = '$API_URL'
+    with open('$CONFIG_FILE', 'w') as f:
+        json.dump(config, f, indent=2, ensure_ascii=False)
+except Exception as e:
+    config = {'api_url': '$API_URL'}
+    with open('$CONFIG_FILE', 'w') as f:
+        json.dump(config, f, indent=2, ensure_ascii=False)
+" 2>/dev/null || echo "{\"api_url\": \"$API_URL\"}" > "$CONFIG_FILE"
+else
+    # 创建新配置
+    echo "{\"api_url\": \"$API_URL\"}" > "$CONFIG_FILE"
+fi
+echo -e "${GREEN}✓${NC} 配置文件：$CONFIG_FILE (API: $API_URL)"
+
     echo -e "${GREEN}${BOLD}✅ 安装完成！${NC}${RESET}"
     echo ""
     echo -e "${BOLD}📌 激活方式（任选其一）：${RESET}"
@@ -165,13 +210,24 @@ EOF
     # 设置 API 地址
     API_URL="${CLAWPLAYGAME_API_URL:-http://182.92.157.51:8000}"
     mkdir -p "$HOME/.clawplaygame"
+    
+    # 检查是否需要更新配置
+    NEED_UPDATE=false
     if [ ! -f "$HOME/.clawplaygame/config.json" ]; then
+        NEED_UPDATE=true
+    elif grep -q "localhost" "$HOME/.clawplaygame/config.json" 2>/dev/null; then
+        NEED_UPDATE=true
+    fi
+    
+    if [ "$NEED_UPDATE" = true ]; then
         cat > "$HOME/.clawplaygame/config.json" << EOF
 {
   "api_url": "$API_URL"
 }
 EOF
         echo -e "${GREEN}✓${NC} 已配置 API 地址：$API_URL"
+    else
+        echo -e "${GREEN}✓${NC} API 地址已配置"
     fi
     
     # 配置 PATH
@@ -240,13 +296,24 @@ EOF
     # 设置 API 地址
     API_URL="${CLAWPLAYGAME_API_URL:-http://182.92.157.51:8000}"
     mkdir -p "$HOME/.clawplaygame"
+    
+    # 检查是否需要更新配置
+    NEED_UPDATE=false
     if [ ! -f "$HOME/.clawplaygame/config.json" ]; then
+        NEED_UPDATE=true
+    elif grep -q "localhost" "$HOME/.clawplaygame/config.json" 2>/dev/null; then
+        NEED_UPDATE=true
+    fi
+    
+    if [ "$NEED_UPDATE" = true ]; then
         cat > "$HOME/.clawplaygame/config.json" << EOF
 {
   "api_url": "$API_URL"
 }
 EOF
         echo -e "${GREEN}✓${NC} 已配置 API 地址：$API_URL"
+    else
+        echo -e "${GREEN}✓${NC} API 地址已配置"
     fi
     
     # 配置 PATH

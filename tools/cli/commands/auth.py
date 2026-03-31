@@ -86,14 +86,33 @@ def login(username: str = typer.Argument(..., help="用户名"), password: str =
 
 
 @app.command("guest")
-def guest_login():
+def guest_login(force_new: bool = typer.Option(False, "--force-new", help="强制生成新游客 ID")):
     """以游客身份登录"""
     console.print("[bold]游客登录[/bold]\n")
     
-    # 生成游客 ID
+    # 检查是否有已保存的游客 ID
     import uuid
-    guest_id = f"guest_{uuid.uuid4().hex[:8]}"
-    guest_name = f"游客_{uuid.uuid4().hex[:4]}"
+    
+    guest_data = config.get("guest_user")
+    
+    if not force_new and guest_data:
+        # 复用已有游客 ID
+        guest_id = guest_data.get("id")
+        guest_name = guest_data.get("nickname")
+        console.print(f"[green]✓ 使用已有游客身份：{guest_name}[/green]\n")
+    else:
+        # 生成新游客 ID
+        guest_id = f"guest_{uuid.uuid4().hex[:8]}"
+        guest_name = f"游客_{uuid.uuid4().hex[:4]}"
+        
+        # 保存到配置
+        guest_user = {
+            "id": guest_id,
+            "nickname": guest_name,
+            "is_guest": True
+        }
+        config.set("guest_user", guest_user)
+        console.print(f"[green]✓ 生成新游客身份：{guest_name}[/green]\n")
     
     # 保存游客会话
     session.user = {
@@ -105,7 +124,8 @@ def guest_login():
     console.print(Panel(
         f"[bold]游客 ID:[/bold] {guest_id}\n"
         f"[bold]昵称:[/bold] {guest_name}\n"
-        f"[yellow]⚠️  游客模式功能受限，建议注册账号[/yellow]",
+        f"[yellow]⚠️  游客模式功能受限，建议注册账号[/yellow]\n"
+        f"[dim]💡 使用 --force-new 可重新生成游客身份[/dim]",
         title="✅ 游客登录成功",
         border_style="yellow"
     ))
