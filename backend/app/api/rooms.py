@@ -412,3 +412,50 @@ async def delete_room(room_id: str, host_id: str = None):
         return {"success": True}
     except ValueError as e:
         raise HTTPException(status_code=400 if "房主" not in str(e) else 403, detail=str(e))
+
+
+@router.post("/{room_id}/start")
+async def start_game(room_id: str):
+    """开始游戏（通用接口，根据游戏类型转发到对应 API）"""
+    # 获取房间信息
+    room = db.get_room_with_session(room_id)
+    if not room:
+        raise HTTPException(status_code=404, detail="房间不存在")
+    
+    game_id = room.get("game_id")
+    if not game_id:
+        raise HTTPException(status_code=400, detail="房间未关联游戏")
+    
+    # 根据游戏类型转发到对应 API
+    import httpx
+    
+    # 映射游戏 ID 到 API 前缀
+    game_api_map = {
+        "avalon": "avalon",
+        "werewolf": "werewolf",
+        "doudizhu": "doudizhu",
+    }
+    
+    api_prefix = game_api_map.get(game_id)
+    if not api_prefix:
+        raise HTTPException(status_code=400, detail=f"不支持的游戏类型：{game_id}")
+    
+    # 调用对应游戏的 start 接口
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"http://localhost:8000/api/{api_prefix}/{room_id}/start",
+                json={"game_type": game_id},
+                timeout=30.0
+            )
+            
+            if response.status_code == 200:
+                return response.json()
+            elif response.status_code == 404:
+                raise HTTPException(status_code=404, detail=f"游戏 {game_id} 的 API 未找到")
+            else:
+                raise HTTPException(status_code=response.status_code, detail=response.text)
+    except httpx.ConnectError as e:
+        raise HTTPException(status_code=503, detail="后端服务连接失败")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"开始游戏失败：{str(e)}")
