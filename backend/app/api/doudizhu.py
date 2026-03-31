@@ -26,8 +26,9 @@ async def start_doudizhu_game(room_id: str, request: StartGameRequest):
     """开始斗地主游戏"""
     from app import db
     from app.games import game_manager
-from app.websocket import manager
+    from app.websocket import manager as ws_manager
     from app.games.doudizhu import DouDizhuGame, Player
+    import asyncio
     
     # 获取房间信息
     room = db.get_room_with_session(room_id)
@@ -39,11 +40,8 @@ from app.websocket import manager
         raise HTTPException(status_code=400, detail="斗地主需要恰好 3 名玩家")
     
     # 创建游戏实例（带 WebSocket 回调）
-    from app.websocket import manager as ws_manager
-    
     def emit_event(room_id: str, event_type: str, data: dict):
         """WebSocket 事件广播"""
-        import asyncio
         asyncio.create_task(ws_manager.broadcast_event(room_id, manager.EventType.GAME_STATE, {
             "event_type": event_type,
             "data": data
@@ -55,12 +53,6 @@ from app.websocket import manager
     
     # 添加玩家到游戏
     for i, player_data in enumerate(players):
-        player = Player(
-            id=player_data["player_id"],
-            name=player_data["player_name"],
-            position=i,
-            is_host=(player_data.get("role") == "host")
-        )
         game.add_player(player_data["player_id"], player_data["player_name"])
     
     # 开始游戏（发牌）
@@ -85,7 +77,6 @@ from app.websocket import manager
 async def get_game_state(room_id: str, player_id: str):
     """获取游戏状态"""
     from app.games import game_manager
-from app.websocket import manager
     
     game = game_manager.get_game(room_id)
     if not game:
@@ -98,7 +89,6 @@ from app.websocket import manager
 async def call_landlord(room_id: str, player_id: str, request: CallLandlordRequest):
     """叫地主"""
     from app.games import game_manager
-from app.websocket import manager
     
     game = game_manager.get_game(room_id)
     if not game:
@@ -112,7 +102,6 @@ from app.websocket import manager
 async def play_cards(room_id: str, player_id: str, request: PlayCardsRequest):
     """出牌"""
     from app.games import game_manager
-from app.websocket import manager
     
     game = game_manager.get_game(room_id)
     if not game:
@@ -126,7 +115,6 @@ from app.websocket import manager
 async def pass_turn(room_id: str, player_id: str, request: PassTurnRequest):
     """过牌"""
     from app.games import game_manager
-from app.websocket import manager
     
     game = game_manager.get_game(room_id)
     if not game:
